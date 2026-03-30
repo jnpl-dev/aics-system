@@ -17,3 +17,5 @@
 | 11 | MSWD additional document request loops back to MSWD | Additional documents go directly back to MSWD not AICS Staff | |
 | 12 | Mayor's Office code adjustment loops back to AICS Staff | Mayor reviews assistance code — if adjustment needed, AICS Staff revises and resubmits | |
 | 13 | Accountant voucher adjustment loops back to MSWD Officer | Accountant flags calculation issues — MSWD Officer revises voucher | |
+| 14 | Canonical APPLICATION.status values are explicitly enumerated | Prevents ambiguous status handling and enforces strict workflow/state machine consistency across backend, frontend, logs, and notifications | 2026-03-30 |
+| 15 | Every APPLICATION.status transition maps to a defined SMS trigger_event | Ensures compliance with mandatory auto-SMS on every status change while allowing human-readable trigger naming | 2026-03-30 |

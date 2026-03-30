@@ -4,11 +4,18 @@
 Phase 1: Project Setup
 
 ## Completed Tasks
-- [ ] None yet
+- [ ] Initialize project repository
+- [ ] Set up version control (Git)
+- [ ] Choose and set up tech stack
+- [ ] Set up development environment
+- [ ] Set up database (MySQL)
+- [x] Run CREATE TABLE queries to initialize schema
+- [ ] Set up environment variables file (.env)
+- [ ] Set up project folder structure
+- [x] Connect Project to Database
 
 ## In Progress
-- [ ] Initialize project repository
-- [ ] Set up tech stack
+- [ ] None currently
 
 ## Upcoming Phases
 
@@ -18,9 +25,10 @@ Phase 1: Project Setup
 - [ ] Choose and set up tech stack
 - [ ] Set up development environment
 - [ ] Set up database (MySQL)
-- [ ] Run CREATE TABLE queries to initialize schema
+- [x] Run CREATE TABLE queries to initialize schema
 - [ ] Set up environment variables file (.env)
 - [ ] Set up project folder structure
+- [x] Connect Project to Database
 
 ### Phase 2: Authentication and Access Management
 - [ ] Implement user registration (admin creates accounts only)
@@ -151,3 +159,6 @@ Phase 1: Project Setup
 | Date | Change | Updated By |
 |---|---|---|
 | | Initial setup | |
+| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development | Copilot |
+| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message | Copilot |
+| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error | Copilot |

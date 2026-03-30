@@ -42,7 +42,7 @@
 | category_id | INT | FK → ASSISTANCE_CATEGORY |
 | submitted_by | INT | FK → USER, NULLABLE |
 | reference_code | VARCHAR(50) | NOT NULL, UNIQUE |
-| status | ENUM(...) | NOT NULL, DEFAULT submitted |
+| status | ENUM(submitted, under_review, resubmission_required, forwarded_to_mswd, pending_additional_docs, approved_by_mswd, coding, forwarded_to_mayor, approved_by_mayor, voucher_preparation, forwarded_to_accounting, forwarded_to_treasury, on_hold, cheque_ready, claimed) | NOT NULL, DEFAULT submitted |
 | applicant_last_name | VARCHAR(100) | NOT NULL |
 | applicant_first_name | VARCHAR(100) | NOT NULL |
 | applicant_middle_name | VARCHAR(100) | NULLABLE |
@@ -216,3 +216,4 @@
 | Date | Change | Updated By |
 |---|---|---|
 | | Initial schema created | |
+| 2026-03-30 | Expanded APPLICATION.status enum with canonical workflow statuses aligned to workflow.md | Copilot |

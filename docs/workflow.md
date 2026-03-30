@@ -19,12 +19,13 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 
 ### Step 2: Application Review and Validation (Process 3.0)
 - Actor: AICS Staff
+- Status set to: under_review (when AICS Staff starts evaluation)
 - AICS Staff reviews submitted documents and conducts interview
 - If documents are incomplete: status set to resubmission_required, resubmission request sent to applicant, SMS triggered
 - If documents are complete: status set to forwarded_to_mswd
 - APPLICATION_REVIEW record created
 - APPLICATION_LOG entry created
-- SMS notification sent: resubmission_requested OR forwarded_to_mswd
+- SMS notification sent: under_review, resubmission_requested, or forwarded_to_mswd
 
 ### Step 3: Social Case Study and Further Review (Process 4.0)
 - Actor: MSWD Officer
@@ -38,11 +39,12 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 
 ### Step 4: Assistance Code Assignment (Process 3.0)
 - Actor: AICS Staff
+- Status set to: coding (when AICS Staff starts code assignment)
 - AICS Staff reviews social case study and selects appropriate code from CodeReference (A-F)
 - ASSISTANCE_CODE record created
 - Status set to: forwarded_to_mayor
 - APPLICATION_LOG entry created
-- SMS notification sent: forwarded_to_mayor
+- SMS notification sent: coding, forwarded_to_mayor
 
 ### Step 5: Mayor's Office Review (Process 5.0)
 - Actor: Mayor's Office Staff
@@ -55,10 +57,12 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 
 ### Step 6: Voucher Preparation (Process 5.0)
 - Actor: MSWD Officer
+- Status set to: voucher_preparation (when MSWD starts voucher preparation)
 - MSWD Officer prepares voucher based on approved assistance code amount
 - VOUCHER record created
 - Status set to: forwarded_to_accounting
 - APPLICATION_LOG entry created
+- SMS notification sent: voucher_preparation, forwarded_to_accounting
 
 ### Step 7: Accounting Verification (Process 5.0)
 - Actor: Accountant
@@ -67,6 +71,7 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 - If approved: status set to forwarded_to_treasury
 - APPLICATION_REVIEW record created
 - APPLICATION_LOG entry created
+- SMS notification sent: forwarded_to_treasury
 
 ### Step 8: Treasury and Cheque Preparation (Process 5.0)
 - Actor: Treasurer
@@ -76,7 +81,7 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 - CHEQUE record created
 - Status set to: cheque_ready
 - APPLICATION_LOG entry created
-- SMS notification sent: cheque_ready
+- SMS notification sent: on_hold OR cheque_ready
 
 ### Step 9: Cheque Claiming
 - Applicant is notified to return to office
@@ -87,7 +92,7 @@ The AICS application follows a strict linear workflow. Each stage must be comple
 - SMS notification sent: claimed
 
 ## Status Flow
-submitted → under_review → forwarded_to_mswd → pending_additional_docs (if needed) → approved_by_mswd → coding → forwarded_to_mayor → approved_by_mayor → voucher_preparation → forwarded_to_accounting → forwarded_to_treasury → cheque_ready → claimed
+submitted → under_review → (resubmission_required → under_review) OR forwarded_to_mswd → (pending_additional_docs → forwarded_to_mswd) OR approved_by_mswd → coding → forwarded_to_mayor → approved_by_mayor → voucher_preparation → forwarded_to_accounting → forwarded_to_treasury → (on_hold → forwarded_to_treasury) OR cheque_ready → claimed
 
 ## Rules
 - Status must never skip steps
