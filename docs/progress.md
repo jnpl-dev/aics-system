@@ -1,9 +1,11 @@
 # Progress Tracker
 
 ## Current Phase
+
 Phase 1: Project Setup
 
 ## Completed Tasks
+
 - [ ] Initialize project repository
 - [ ] Set up version control (Git)
 - [ ] Choose and set up tech stack
@@ -15,11 +17,13 @@ Phase 1: Project Setup
 - [x] Connect Project to Database
 
 ## In Progress
+
 - [ ] None currently
 
 ## Upcoming Phases
 
 ### Phase 1: Project Setup
+
 - [ ] Initialize project repository
 - [ ] Set up version control (Git)
 - [ ] Choose and set up tech stack
@@ -31,6 +35,7 @@ Phase 1: Project Setup
 - [x] Connect Project to Database
 
 ### Phase 2: Authentication and Access Management
+
 - [ ] Implement user registration (admin creates accounts only)
 - [ ] Implement login with email and password
 - [ ] Implement password hashing (bcrypt or Argon2)
@@ -43,6 +48,7 @@ Phase 1: Project Setup
 - [ ] Implement route guards per role
 
 ### Phase 3: System Administration
+
 - [ ] Build user management page
 - [ ] Build role and permission assignment
 - [ ] Build password reset for users
@@ -51,12 +57,14 @@ Phase 1: Project Setup
 - [ ] Build system activity monitor
 
 ### Phase 4: Assistance Category and Requirements Management
+
 - [ ] Build assistance category list page (CRUD)
 - [ ] Build requirements list page per category (CRUD)
 - [ ] Implement is_active toggle for categories and requirements
 - [ ] Implement dynamic requirements checklist based on selected category
 
 ### Phase 5: Application Submission Management
+
 - [ ] Build assistance type selection page
 - [ ] Build dynamic requirements display
 - [ ] Build application form with applicant and beneficiary fields
@@ -69,6 +77,7 @@ Phase 1: Project Setup
 - [ ] Build resubmission flow
 
 ### Phase 6: Application Review and Validation Management
+
 - [ ] Build application queue for AICS Staff
 - [ ] Build application detail view with all documents
 - [ ] Implement document validation workflow
@@ -80,6 +89,7 @@ Phase 1: Project Setup
 - [ ] Implement auto-SMS notification trigger
 
 ### Phase 7: Social Case Study and Assistance Code Management
+
 - [ ] Build application queue for MSWD Officer
 - [ ] Build application detail view for MSWD Officer
 - [ ] Implement further review and interview workflow
@@ -93,6 +103,7 @@ Phase 1: Project Setup
 - [ ] Implement auto-SMS notification trigger
 
 ### Phase 8: Mayor's Office Review
+
 - [ ] Build application queue for Mayor's Office Staff
 - [ ] Build application detail view
 - [ ] Implement approval workflow
@@ -102,6 +113,7 @@ Phase 1: Project Setup
 - [ ] Implement auto-SMS notification trigger
 
 ### Phase 9: Financial Assistance Management
+
 - [ ] Build voucher preparation page for MSWD Officer
 - [ ] Implement voucher creation
 - [ ] Build forward to Accounting Office functionality
@@ -119,12 +131,14 @@ Phase 1: Project Setup
 - [ ] Implement ApplicationLog entries
 
 ### Phase 10: Notification Management
+
 - [ ] Integrate SMS API provider
 - [ ] Implement auto-SMS triggers at all key stages
 - [ ] Implement delivery status tracking
 - [ ] Build notification log viewer
 
 ### Phase 11: Reporting and Monitoring
+
 - [ ] Build application summary report
 - [ ] Build financial report
 - [ ] Build SMS notification log report
@@ -133,6 +147,7 @@ Phase 1: Project Setup
 - [ ] Build main dashboard with key metrics per role
 
 ### Phase 12: Testing
+
 - [ ] Unit test all business logic functions
 - [ ] Test all role-based access controls
 - [ ] Test application workflow end-to-end
@@ -146,6 +161,7 @@ Phase 1: Project Setup
 - [ ] Security test
 
 ### Phase 13: Deployment
+
 - [ ] Set up production server
 - [ ] Set up production database
 - [ ] Configure environment variables
@@ -156,9 +172,10 @@ Phase 1: Project Setup
 - [ ] Train staff on system usage
 
 ## Change Log
-| Date | Change | Updated By |
-|---|---|---|
-| | Initial setup | |
-| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development | Copilot |
-| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message | Copilot |
-| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error | Copilot |
+
+| Date       | Change                                                                                                                                                     | Updated By |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+|            | Initial setup                                                                                                                                              |            |
+| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development | Copilot    |
+| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message                                               | Copilot    |
+| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error                                | Copilot    |
