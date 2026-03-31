@@ -38,7 +38,7 @@ Phase 2: Authentication and Access Management
 
 - [ ] Implement user registration (admin creates accounts only)
 - [x] Implement login with email and password
-- [ ] Implement password hashing (bcrypt or Argon2)
+- [x] Implement password hashing (bcrypt or Argon2)
 - [x] Implement JWT or session-based authentication
 - [ ] Implement MFA / OTP verification
 - [x] Implement role-based access control (RBAC) middleware
@@ -186,3 +186,4 @@ Phase 2: Authentication and Access Management
 | 2026-03-31 | Added email OTP MFA flow (`/mfa`, OTP request/verify endpoints, MFA middleware enforcement, and updated auth integration tests)                              | Copilot    |
 | 2026-03-31 | Reverted authentication to simple Supabase email/password flow and removed active MFA route/UI flow from runtime and docs.                                   | Copilot    |
 | 2026-03-31 | Refactored admin dashboard to single-page dynamic tab loading with cached tab fragments (`sessionStorage`) and documented the dashboard navigation standard. | Copilot    |
+| 2026-03-31 | Finalized password hashing using Laravel hashed cast (bcrypt/Argon2 compatible), aligned user factory fields, and added hashing behavior unit tests.         | Copilot    |
