@@ -40,7 +40,7 @@ Phase 2: Authentication and Access Management
 - [x] Implement login with email and password
 - [x] Implement password hashing (bcrypt or Argon2)
 - [x] Implement JWT or session-based authentication
-- [ ] Implement MFA / OTP verification
+- [x] Implement MFA / OTP verification
 - [x] Implement role-based access control (RBAC) middleware
 - [ ] Implement password reset flow
 - [ ] Implement login attempt tracking
@@ -187,3 +187,8 @@ Phase 2: Authentication and Access Management
 | 2026-03-31 | Reverted authentication to simple Supabase email/password flow and removed active MFA route/UI flow from runtime and docs.                                   | Copilot    |
 | 2026-03-31 | Refactored admin dashboard to single-page dynamic tab loading with cached tab fragments (`sessionStorage`) and documented the dashboard navigation standard. | Copilot    |
 | 2026-03-31 | Finalized password hashing using Laravel hashed cast (bcrypt/Argon2 compatible), aligned user factory fields, and added hashing behavior unit tests.         | Copilot    |
+| 2026-03-31 | Implemented mandatory 6-digit email OTP verification for all roles after password login, with protected route enforcement and OTP integration tests.         | Copilot    |
+| 2026-03-31 | Removed temporary OTP fallback/debug response hints and aligned docs to strict email-only OTP delivery behavior.                                             | Copilot    |
+| 2026-03-31 | Improved login OTP UX: immediate transition to OTP step after password auth (while OTP email request continues), with guarded pending-action states.         | Copilot    |
+| 2026-03-31 | Added reusable `x-shared.button` component with `primary`/`secondary`/`tertiary` variants and integrated it into login + OTP actions.                        | Copilot    |
+| 2026-03-31 | Added button loading indicators: built-in spinner plus optional `loadingText` label swap during async operations (sign in, verify, resend).                  | Copilot    |

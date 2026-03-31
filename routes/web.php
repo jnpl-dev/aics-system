@@ -12,6 +12,8 @@ Route::get('/dashboard', [AuthIntegrationController::class, 'dashboard'])->name(
 Route::get('/auth/logout', [AuthIntegrationController::class, 'logout'])->name('auth.logout');
 
 Route::middleware(['supabase.auth'])->group(function (): void {
+    Route::post('/auth/otp/request', [AuthIntegrationController::class, 'requestOtp'])->name('auth.otp.request');
+    Route::post('/auth/otp/verify', [AuthIntegrationController::class, 'verifyOtp'])->name('auth.otp.verify');
     Route::get('/auth/session', [AuthIntegrationController::class, 'session'])->name('auth.session');
 });
 

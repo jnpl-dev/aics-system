@@ -34,7 +34,7 @@
                 </svg>
             </div>
 
-            <section class="relative z-10 flex w-full flex-col rounded-xl border border-[#1F6336]/20 bg-white px-4 shadow-xl sm:w-[30rem]">
+            <section id="auth-card" class="relative z-10 flex w-full flex-col rounded-xl border border-[#1F6336]/20 bg-white px-4 shadow-xl" style="max-width: 30rem;">
                 <div class="p-6">
                     <div class="mb-10 flex items-center justify-center overflow-hidden">
                         <a href="{{ url('/') }}" class="flex items-center gap-2 no-underline">
@@ -42,8 +42,8 @@
                         </a>
                     </div>
 
-                    <h1 class="text-center mb-2 text-xl font-semibold text-gray-800 xl:text-2xl">Welcome to AICS Program</h1>
-                    <p class="text-center mb-6 text-sm text-gray-500">Sign in with your staff account to access and manage applications.</p>
+                    <h1 id="login-step-title" class="text-center mb-2 text-xl font-semibold text-gray-800 xl:text-2xl">Welcome to AICS Program</h1>
+                    <p id="login-step-subtitle" class="text-center mb-6 text-sm text-gray-500">Sign in with your staff account to access and manage applications.</p>
 
                     <form id="supabase-login-form" class="mb-4" method="POST" action="#" onsubmit="return false;">
                         <div class="mb-4">
@@ -97,13 +97,60 @@
                             </label>
                         </div>
 
-                        <button
+                        <x-shared.button
+                            id="password-submit-btn"
                             type="submit"
-                            class="w-full rounded-md border border-[#3DA814] bg-[#3DA814] px-5 py-2 text-sm font-medium text-white shadow transition hover:border-[#1F6336] hover:bg-[#1F6336]"
+                            variant="primary"
+                            loading-text="Signing in..."
+                            :full-width="true"
+                            class="rounded-md px-5 py-2 shadow"
                         >
                             Sign in
-                        </button>
+                        </x-shared.button>
                     </form>
+
+                    <section id="otp-section" class="hidden mb-4 rounded-xl border border-[#1F6336]/15 bg-[#F0F3EF]/40 p-4 sm:p-6 shadow-sm">
+                        <div class="text-center">
+                            <h2 class="text-lg sm:text-xl font-bold text-[#1F6336]">Email Verification</h2>
+                            <p id="otp-help-text" class="mt-1 text-sm text-gray-600">Enter the 6-digit verification code sent to your email.</p>
+                        </div>
+
+                        <input id="otp-code" type="hidden" name="otp_code" autocomplete="one-time-code" />
+
+                        <div id="otp-digit-group" class="mt-5 mx-auto flex w-full max-w-[24rem] items-center justify-center gap-3 sm:gap-4">
+                            @for ($index = 0; $index < 6; $index++)
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    pattern="\d*"
+                                    maxlength="1"
+                                    data-otp-digit
+                                    data-otp-index="{{ $index }}"
+                                    class="h-11 w-11 sm:h-12 sm:w-12 text-center text-lg sm:text-xl font-extrabold text-[#1F6336] bg-white border border-[#1F6336]/15 hover:border-[#1F6336]/30 rounded-lg outline-none transition focus:bg-white focus:border-[#3DA814] focus:ring-2 focus:ring-[#3DA814]/20"
+                                    aria-label="OTP digit {{ $index + 1 }}"
+                                />
+                            @endfor
+                        </div>
+
+                        <div class="max-w-[280px] mx-auto mt-5">
+                            <x-shared.button id="otp-verify-btn" type="button" variant="primary" loading-text="Verifying..." :full-width="true">
+                                Verify Account
+                            </x-shared.button>
+                        </div>
+
+                        <div class="mt-4 text-center text-sm text-gray-500">
+                            Didn't receive code?
+                            <x-shared.button id="otp-resend-btn" type="button" variant="tertiary" loading-text="Resending..." class="font-medium">
+                                Resend
+                            </x-shared.button>
+                        </div>
+
+                        <div class="mt-3 text-center">
+                            <x-shared.button id="otp-back-btn" type="button" variant="tertiary" class="text-xs font-medium text-gray-500 hover:text-gray-700 focus:ring-0">
+                                Use a different account
+                            </x-shared.button>
+                        </div>
+                    </section>
 
                     <div id="auth-status" class="hidden rounded-md border px-3 py-2 text-sm"></div>
 

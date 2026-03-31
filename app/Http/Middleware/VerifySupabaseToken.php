@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use Closure;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class VerifySupabaseToken
 {
+    private const OTP_BYPASS_ROUTES = [
+        'auth.otp.request',
+        'auth.otp.verify',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $bearerToken = $request->bearerToken();
@@ -62,7 +68,25 @@ class VerifySupabaseToken
         $request->setUserResolver(static fn (): User => $localUser);
         $request->attributes->set('supabase_user', $supabaseUser);
 
+        if ($this->requiresOtpVerification($request) && !Cache::has($this->otpVerifiedCacheKey($bearerToken))) {
+            return response()->json([
+                'message' => 'OTP verification required before accessing protected resources.',
+            ], 403);
+        }
+
         return $next($request);
+    }
+
+    private function requiresOtpVerification(Request $request): bool
+    {
+        $routeName = $request->route()?->getName();
+
+        return !in_array($routeName, self::OTP_BYPASS_ROUTES, true);
+    }
+
+    private function otpVerifiedCacheKey(string $token): string
+    {
+        return 'auth:otp:verified:'.hash('sha256', $token);
     }
 
     private function unauthorized(string $message): JsonResponse

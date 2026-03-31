@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const TOKEN_KEY = "aics_supabase_access_token";
+const OTP_SESSION_KEY = "aics_otp_session_id";
 const DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v1";
 const DASHBOARD_ALLOWED_TABS = new Set([
     "dashboard",
@@ -58,6 +59,22 @@ async function validateBackendSession(token) {
 
 function initLoginFlow() {
     const form = document.getElementById("supabase-login-form");
+    const otpSection = document.getElementById("otp-section");
+    const authCard = document.getElementById("auth-card");
+    const stepTitle = document.getElementById("login-step-title");
+    const stepSubtitle = document.getElementById("login-step-subtitle");
+    const otpInput = document.getElementById("otp-code");
+    const otpDigitInputs = Array.from(
+        document.querySelectorAll("[data-otp-digit]"),
+    );
+    const otpVerifyBtn = document.getElementById("otp-verify-btn");
+    const otpResendBtn = document.getElementById("otp-resend-btn");
+    const otpBackBtn = document.getElementById("otp-back-btn");
+    const otpHelpText = document.getElementById("otp-help-text");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const passwordSubmitBtn = document.getElementById("password-submit-btn");
+
     if (!form || !appConfig?.url || !appConfig?.anonKey) {
         return;
     }
@@ -68,6 +85,265 @@ function initLoginFlow() {
         },
     });
 
+    const csrfToken =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ?? "";
+
+    const getCurrentToken = () => localStorage.getItem(TOKEN_KEY) ?? "";
+    const getOtpSessionId = () => sessionStorage.getItem(OTP_SESSION_KEY) ?? "";
+    let otpRequestPending = false;
+
+    const setPasswordFormEnabled = (enabled) => {
+        if (emailInput) emailInput.readOnly = !enabled;
+        if (passwordInput) passwordInput.readOnly = !enabled;
+        if (passwordSubmitBtn) passwordSubmitBtn.disabled = !enabled;
+    };
+
+    const syncOtpHiddenInput = () => {
+        if (!otpInput) {
+            return "";
+        }
+
+        const code = otpDigitInputs.map((input) => input.value.trim()).join("");
+        otpInput.value = code;
+        return code;
+    };
+
+    const clearOtpInputs = () => {
+        otpDigitInputs.forEach((input) => {
+            input.value = "";
+        });
+        syncOtpHiddenInput();
+    };
+
+    const setButtonEnabled = (button, enabled) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        button.disabled = !enabled;
+    };
+
+    const setButtonLoading = (button, isLoading) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        button.dataset.loading = isLoading ? "true" : "false";
+        button.setAttribute("aria-busy", isLoading ? "true" : "false");
+
+        const spinner = button.querySelector("[data-btn-spinner]");
+        if (spinner instanceof HTMLElement) {
+            spinner.classList.toggle("hidden", !isLoading);
+        }
+
+        const label = button.querySelector("[data-btn-label]");
+        if (label instanceof HTMLElement) {
+            if (!button.dataset.defaultLabel) {
+                button.dataset.defaultLabel = label.textContent?.trim() ?? "";
+            }
+
+            const loadingText =
+                button.dataset.loadingText?.trim() || "Loading...";
+
+            label.textContent = isLoading
+                ? loadingText
+                : button.dataset.defaultLabel;
+        }
+    };
+
+    const syncOtpActionAvailability = () => {
+        const hasOtpSession = Boolean(getOtpSessionId());
+        setButtonEnabled(otpVerifyBtn, hasOtpSession && !otpRequestPending);
+        setButtonEnabled(otpResendBtn, !otpRequestPending);
+
+        if (hasOtpSession && !otpRequestPending) {
+            setButtonLoading(otpVerifyBtn, false);
+        }
+
+        if (!otpRequestPending) {
+            setButtonLoading(otpResendBtn, false);
+        }
+    };
+
+    const updateOtpHelpText = (maskedEmail = "") => {
+        if (!otpHelpText) {
+            return;
+        }
+
+        otpHelpText.textContent = maskedEmail
+            ? `Enter the 6-digit OTP sent to ${maskedEmail}.`
+            : "Enter the 6-digit OTP sent to your email address.";
+    };
+
+    const focusOtpInput = (index) => {
+        const safeIndex = Math.max(
+            0,
+            Math.min(index, otpDigitInputs.length - 1),
+        );
+        otpDigitInputs[safeIndex]?.focus();
+        otpDigitInputs[safeIndex]?.select();
+    };
+
+    const setStepContent = (step) => {
+        if (!form || !otpSection) {
+            return;
+        }
+
+        if (step === "otp") {
+            form.classList.add("hidden");
+            otpSection.classList.remove("hidden");
+            if (authCard instanceof HTMLElement) {
+                authCard.style.maxWidth = "40rem";
+            }
+            if (stepTitle) stepTitle.textContent = "Enter verification code";
+            if (stepSubtitle)
+                stepSubtitle.textContent =
+                    "Complete sign-in using the 6-digit code sent to your email.";
+        } else {
+            form.classList.remove("hidden");
+            otpSection.classList.add("hidden");
+            if (authCard instanceof HTMLElement) {
+                authCard.style.maxWidth = "30rem";
+            }
+            if (stepTitle) stepTitle.textContent = "Welcome to AICS Program";
+            if (stepSubtitle)
+                stepSubtitle.textContent =
+                    "Sign in with your staff account to access and manage applications.";
+            clearOtpInputs();
+        }
+    };
+
+    const showOtpSection = (maskedEmail = "") => {
+        if (!otpSection) {
+            return;
+        }
+
+        setStepContent("otp");
+        updateOtpHelpText(maskedEmail);
+        setPasswordFormEnabled(false);
+        clearOtpInputs();
+        focusOtpInput(0);
+        syncOtpActionAvailability();
+    };
+
+    otpDigitInputs.forEach((input, index) => {
+        input.addEventListener("input", (event) => {
+            const target = event.currentTarget;
+            if (!(target instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const digitsOnly = target.value.replace(/\D/g, "");
+            target.value = digitsOnly.slice(-1);
+
+            syncOtpHiddenInput();
+
+            if (target.value && index < otpDigitInputs.length - 1) {
+                focusOtpInput(index + 1);
+            }
+        });
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Backspace") {
+                const target = event.currentTarget;
+                if (!(target instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                if (target.value === "" && index > 0) {
+                    otpDigitInputs[index - 1].value = "";
+                    syncOtpHiddenInput();
+                    focusOtpInput(index - 1);
+                    event.preventDefault();
+                }
+            }
+
+            if (event.key === "ArrowLeft" && index > 0) {
+                focusOtpInput(index - 1);
+                event.preventDefault();
+            }
+
+            if (
+                event.key === "ArrowRight" &&
+                index < otpDigitInputs.length - 1
+            ) {
+                focusOtpInput(index + 1);
+                event.preventDefault();
+            }
+        });
+
+        input.addEventListener("paste", (event) => {
+            const clipboard = event.clipboardData?.getData("text") ?? "";
+            const digits = clipboard
+                .replace(/\D/g, "")
+                .slice(0, otpDigitInputs.length);
+
+            if (!digits) {
+                return;
+            }
+
+            event.preventDefault();
+
+            otpDigitInputs.forEach((otpBox, otpIndex) => {
+                otpBox.value = digits[otpIndex] ?? "";
+            });
+            syncOtpHiddenInput();
+
+            const nextIndex = Math.min(
+                digits.length,
+                otpDigitInputs.length - 1,
+            );
+            focusOtpInput(nextIndex);
+        });
+    });
+
+    const requestOtp = async (token) => {
+        const response = await fetch("/auth/otp/request", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({}),
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.message ?? "Failed to request OTP.");
+        }
+
+        return payload;
+    };
+
+    const verifyOtp = async (token, otpSessionId, otpCode) => {
+        const response = await fetch("/auth/otp/verify", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                otp_session_id: otpSessionId,
+                otp_code: otpCode,
+            }),
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.message ?? "OTP verification failed.");
+        }
+
+        return payload;
+    };
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -76,6 +352,7 @@ function initLoginFlow() {
         const password = String(formData.get("password") ?? "");
 
         try {
+            setButtonLoading(passwordSubmitBtn, true);
             setStatus("Signing in...");
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
@@ -91,18 +368,141 @@ function initLoginFlow() {
             const token = data.session.access_token;
             localStorage.setItem(TOKEN_KEY, token);
 
-            await validateBackendSession(token);
-            setStatus("Sign in successful. Redirecting to dashboard...");
-            window.location.assign("/dashboard");
+            sessionStorage.removeItem(OTP_SESSION_KEY);
+            otpRequestPending = true;
+            showOtpSection();
+            setStatus("Password accepted. Sending your OTP now...");
+
+            const otpPayload = await requestOtp(token);
+            otpRequestPending = false;
+            sessionStorage.setItem(
+                OTP_SESSION_KEY,
+                String(otpPayload.otp_session_id ?? ""),
+            );
+            syncOtpActionAvailability();
+
+            updateOtpHelpText(String(otpPayload.masked_email ?? ""));
+            setStatus(
+                String(
+                    otpPayload.message ??
+                        "Password accepted. Enter the 6-digit OTP sent to your email.",
+                ),
+            );
         } catch (err) {
+            otpRequestPending = false;
+            syncOtpActionAvailability();
             setStatus(
                 err instanceof Error
                     ? err.message
                     : "Unexpected authentication error.",
                 true,
             );
+        } finally {
+            setButtonLoading(passwordSubmitBtn, false);
         }
     });
+
+    otpVerifyBtn?.addEventListener("click", async () => {
+        const token = getCurrentToken();
+        const otpSessionId = getOtpSessionId();
+        const otpCode = syncOtpHiddenInput();
+
+        if (otpRequestPending) {
+            setStatus("OTP is still being sent. Please wait a moment.", true);
+            return;
+        }
+
+        if (!token) {
+            setStatus("Session expired. Please sign in again.", true);
+            setPasswordFormEnabled(true);
+            otpSection?.classList.add("hidden");
+            return;
+        }
+
+        if (!otpSessionId) {
+            setStatus("OTP session missing. Please request a new OTP.", true);
+            return;
+        }
+
+        if (!/^\d{6}$/.test(otpCode)) {
+            setStatus("Please enter a valid 6-digit OTP code.", true);
+            return;
+        }
+
+        try {
+            setButtonLoading(otpVerifyBtn, true);
+            setStatus("Verifying OTP...");
+            await verifyOtp(token, otpSessionId, otpCode);
+            sessionStorage.removeItem(OTP_SESSION_KEY);
+            syncOtpActionAvailability();
+
+            await validateBackendSession(token);
+            setStatus("Sign in successful. Redirecting to dashboard...");
+            window.location.assign("/dashboard");
+        } catch (err) {
+            setStatus(
+                err instanceof Error ? err.message : "OTP verification failed.",
+                true,
+            );
+        } finally {
+            setButtonLoading(otpVerifyBtn, false);
+        }
+    });
+
+    otpResendBtn?.addEventListener("click", async () => {
+        const token = getCurrentToken();
+        if (!token) {
+            setStatus("Session expired. Please sign in again.", true);
+            return;
+        }
+
+        if (otpRequestPending) {
+            setStatus("OTP request in progress. Please wait.", true);
+            return;
+        }
+
+        try {
+            otpRequestPending = true;
+            syncOtpActionAvailability();
+            setButtonLoading(otpResendBtn, true);
+            setStatus("Requesting a new OTP...");
+            const otpPayload = await requestOtp(token);
+            otpRequestPending = false;
+            sessionStorage.setItem(
+                OTP_SESSION_KEY,
+                String(otpPayload.otp_session_id ?? ""),
+            );
+            syncOtpActionAvailability();
+            updateOtpHelpText(String(otpPayload.masked_email ?? ""));
+            setStatus(String(otpPayload.message ?? "A new OTP has been sent."));
+        } catch (err) {
+            otpRequestPending = false;
+            syncOtpActionAvailability();
+            setStatus(
+                err instanceof Error ? err.message : "Unable to resend OTP.",
+                true,
+            );
+        } finally {
+            setButtonLoading(otpResendBtn, false);
+        }
+    });
+
+    otpBackBtn?.addEventListener("click", () => {
+        otpRequestPending = false;
+        setPasswordFormEnabled(true);
+        sessionStorage.removeItem(OTP_SESSION_KEY);
+        syncOtpActionAvailability();
+        setStepContent("password");
+        setStatus("You can sign in again to request a new OTP.");
+    });
+
+    if (getCurrentToken() && getOtpSessionId()) {
+        showOtpSection();
+        setStatus("Enter the OTP code to continue.");
+    } else {
+        syncOtpActionAvailability();
+        setStepContent("password");
+    }
 }
 
 function initDashboardFlow() {
@@ -173,8 +573,19 @@ function initDashboardFlow() {
 
         if (response.status === 401) {
             localStorage.removeItem(TOKEN_KEY);
+            sessionStorage.removeItem(OTP_SESSION_KEY);
             window.location.assign("/login");
             return;
+        }
+
+        if (response.status === 403) {
+            const message = String(payload?.message ?? "");
+            if (message.toLowerCase().includes("otp verification required")) {
+                localStorage.removeItem(TOKEN_KEY);
+                sessionStorage.removeItem(OTP_SESSION_KEY);
+                window.location.assign("/login");
+                return;
+            }
         }
 
         if (endpoint === "/auth/session" && response.ok) {
@@ -437,11 +848,17 @@ function initDashboardFlow() {
     });
 
     logoutBtn?.addEventListener("click", async () => {
+        const activeToken = localStorage.getItem(TOKEN_KEY);
+
         localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(OTP_SESSION_KEY);
         sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
         await fetch("/auth/logout", {
             headers: {
                 Accept: "application/json",
+                ...(activeToken
+                    ? { Authorization: `Bearer ${activeToken}` }
+                    : {}),
             },
         });
         window.location.assign("/login");

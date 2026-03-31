@@ -313,6 +313,44 @@ Add `wire:navigate` to all internal links to get instant SPA-like page transitio
 
 Never repeat UI markup. Extract repeating elements into Blade components or Livewire components.
 
+### Shared button component standard
+
+Use `resources/views/components/shared/button.blade.php` for all button actions.
+
+Supported variants:
+
+- `primary`
+- `secondary`
+- `tertiary`
+
+Supported props:
+
+- `variant` (default: `primary`)
+- `type` (default: `button`)
+- `fullWidth` (default: `false`)
+- `loadingText` (optional; shown while button is in loading state)
+
+Loading behavior contract:
+
+- The component includes a built-in spinner (`data-btn-spinner`)
+- The component wraps visible label text in `data-btn-label`
+- Client logic can toggle loading by setting `data-loading` + `aria-busy`
+- If `loadingText` is provided, label swaps to that text while loading
+
+Example:
+
+```blade
+<x-shared.button
+    id="save-settings-btn"
+    type="button"
+    variant="primary"
+    loading-text="Saving..."
+    :full-width="true"
+>
+    Save Settings
+</x-shared.button>
+```
+
 ```bash
 # Create a new Livewire component
 php artisan make:livewire AicsStaff/ApplicationQueue
