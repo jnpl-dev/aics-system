@@ -2,18 +2,18 @@
 
 ## Current Phase
 
-Phase 1: Project Setup
+Phase 2: Authentication and Access Management
 
 ## Completed Tasks
 
-- [ ] Initialize project repository
-- [ ] Set up version control (Git)
-- [ ] Choose and set up tech stack
-- [ ] Set up development environment
-- [ ] Set up database (MySQL)
+- [x] Initialize project repository
+- [x] Set up version control (Git)
+- [x] Choose and set up tech stack
+- [x] Set up development environment
+- [x] Set up database (MySQL)
 - [x] Run CREATE TABLE queries to initialize schema
-- [ ] Set up environment variables file (.env)
-- [ ] Set up project folder structure
+- [x] Set up environment variables file (.env)
+- [x] Set up project folder structure
 - [x] Connect Project to Database
 
 ## In Progress
@@ -24,28 +24,28 @@ Phase 1: Project Setup
 
 ### Phase 1: Project Setup
 
-- [ ] Initialize project repository
-- [ ] Set up version control (Git)
-- [ ] Choose and set up tech stack
-- [ ] Set up development environment
-- [ ] Set up database (MySQL)
+- [x] Initialize project repository
+- [x] Set up version control (Git)
+- [x] Choose and set up tech stack
+- [x] Set up development environment
+- [x] Set up database (MySQL)
 - [x] Run CREATE TABLE queries to initialize schema
-- [ ] Set up environment variables file (.env)
-- [ ] Set up project folder structure
+- [x] Set up environment variables file (.env)
+- [x] Set up project folder structure
 - [x] Connect Project to Database
 
 ### Phase 2: Authentication and Access Management
 
 - [ ] Implement user registration (admin creates accounts only)
-- [ ] Implement login with email and password
+- [x] Implement login with email and password
 - [ ] Implement password hashing (bcrypt or Argon2)
-- [ ] Implement JWT or session-based authentication
+- [x] Implement JWT or session-based authentication
 - [ ] Implement MFA / OTP verification
-- [ ] Implement role-based access control (RBAC) middleware
+- [x] Implement role-based access control (RBAC) middleware
 - [ ] Implement password reset flow
 - [ ] Implement login attempt tracking
-- [ ] Implement logout
-- [ ] Implement route guards per role
+- [x] Implement logout
+- [x] Implement route guards per role
 
 ### Phase 3: System Administration
 
@@ -173,9 +173,16 @@ Phase 1: Project Setup
 
 ## Change Log
 
-| Date       | Change                                                                                                                                                     | Updated By |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-|            | Initial setup                                                                                                                                              |            |
-| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development | Copilot    |
-| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message                                               | Copilot    |
-| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error                                | Copilot    |
+| Date       | Change                                                                                                                                                       | Updated By |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+|            | Initial setup                                                                                                                                                |            |
+| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development   | Copilot    |
+| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message                                                 | Copilot    |
+| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error                                  | Copilot    |
+| 2026-03-30 | Phase 1 checklist normalized and marked complete after verification (git initialized, env configured, MySQL connected, migrations ran, tests passing)        | Copilot    |
+| 2026-03-31 | Cleaned unused rollback artifacts (orphan Livewire auth/dashboard files, layouts, chart module, and prototype component files) to keep the workspace tidy    | Copilot    |
+| 2026-03-31 | Added Supabase Auth setup scaffolding (env/config, `supabase.auth` token middleware, `role` RBAC middleware, middleware tests, and docs usage examples)      | Copilot    |
+| 2026-03-31 | Implemented Supabase login integration slice (`/login`, `/auth/session`, `/dashboard`, `/admin/ping`, `/auth/logout`) with frontend flow and feature tests   | Copilot    |
+| 2026-03-31 | Added email OTP MFA flow (`/mfa`, OTP request/verify endpoints, MFA middleware enforcement, and updated auth integration tests)                              | Copilot    |
+| 2026-03-31 | Reverted authentication to simple Supabase email/password flow and removed active MFA route/UI flow from runtime and docs.                                   | Copilot    |
+| 2026-03-31 | Refactored admin dashboard to single-page dynamic tab loading with cached tab fragments (`sessionStorage`) and documented the dashboard navigation standard. | Copilot    |

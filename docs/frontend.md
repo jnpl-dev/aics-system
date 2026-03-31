@@ -1,6 +1,7 @@
 # Frontend Development Guide
 
 ## Stack
+
 - **Backend:** Laravel 11
 - **Templating:** Blade
 - **Dynamic components:** Livewire 3
@@ -10,17 +11,76 @@
 - **SPA-like navigation:** wire:navigate (built into Livewire 3)
 
 ## Why This Stack
+
 - Everything is written in PHP — no separate JavaScript framework
 - Livewire handles all server-side reactivity — live search, dynamic forms, file uploads, pagination
 - Alpine.js handles purely client-side interactions — modals, toggles, show/hide, confirmations
 - wire:navigate gives SPA-like instant page transitions without a separate frontend framework
 - AI tools generate Livewire and Alpine code very well — ideal for vibe coding
 
+## Design Tokens (Mandatory for New UI)
+
+Use this palette and font pairing for all new screens and UI updates:
+
+### Color Palette
+
+- `--dark-emerald: #1F6336ff;`
+- `--bright-fern: #3DA814ff;`
+- `--porcelain: #F0F3EFff;`
+
+### Font Pairing
+
+- `Inter`
+- `Public Sans`
+
+Implementation note:
+
+- Body copy should default to **Inter**.
+- Headings should default to **Public Sans**.
+- Primary actions should use **bright-fern** with **dark-emerald** hover/active states.
+
+---
+
+## Admin Dashboard Navigation Pattern (Current Standard)
+
+The admin dashboard now uses a **single-page shell** pattern:
+
+- Only one page route is used for admin shell rendering: `/dashboard`
+- Sidebar tab clicks do **not** navigate to a new page
+- The content area swaps using async requests to `/dashboard/content/{tab}`
+- Loaded tab fragments are cached client-side to avoid refetching already loaded sections
+
+### Why we use this
+
+- Prevent full page refreshes when switching dashboard tabs
+- Keep sidebar and global dashboard context mounted once
+- Reduce unnecessary server rendering and browser work for repeated tab visits
+
+### Implementation contract
+
+1. Main dashboard shell view: `resources/views/admin/dashboard.blade.php`
+2. Sidebar tab links carry `data-dashboard-tab` attributes
+3. Tab content endpoint returns HTML fragments only
+4. Tab partials live under `resources/views/admin/tabs/*.blade.php`
+5. Client loader and cache live in `resources/js/auth/supabase-auth.js`
+
+### Caching behavior
+
+- Cache key: `aics_dashboard_tab_cache_v1` (stored in `sessionStorage`)
+- First time tab visit: fetch from backend endpoint
+- Subsequent visits in the same browser session: load from cache
+- Logout clears both auth token and dashboard tab cache
+
+### Prompting note for future work
+
+When requesting dashboard changes, treat the dashboard as **one page** with **dynamic content regions**. Do not add route-per-tab full-page navigation unless explicitly required.
+
 ---
 
 ## Installation
 
 This stack is installed via Laravel Breeze:
+
 ```bash
 composer require laravel/breeze --dev
 php artisan breeze:install livewire
@@ -29,6 +89,7 @@ npm run dev
 ```
 
 This installs and configures:
+
 - Livewire 3
 - Alpine.js
 - Tailwind CSS
@@ -39,6 +100,7 @@ This installs and configures:
 ---
 
 ## Project Structure
+
 ```
 resources/
 ├── views/
@@ -68,7 +130,7 @@ resources/
 │   └── livewire/                      ← Livewire component views
 │       ├── auth/
 │       │   ├── login.blade.php
-│       │   └── otp.blade.php
+│       │   └── session-status.blade.php
 │       ├── applicant/
 │       │   ├── select-category.blade.php
 │       │   ├── application-form.blade.php
@@ -109,7 +171,7 @@ app/
 └── Livewire/                          ← Livewire component PHP classes
     ├── Auth/
     │   ├── Login.php
-    │   └── Otp.php
+    │   └── SessionStatus.php
     ├── Applicant/
     │   ├── SelectCategory.php
     │   ├── ApplicationForm.php
@@ -153,7 +215,9 @@ app/
 ## Core Principles
 
 ### 1. Livewire for Server-Side Reactivity
+
 Use Livewire whenever the interaction requires data from the database or server-side logic.
+
 ```php
 // Every Livewire component has a PHP class and a Blade view
 class ApplicationQueue extends Component
@@ -176,10 +240,14 @@ class ApplicationQueue extends Component
     }
 }
 ```
+
 ```html
 <!-- livewire/aics-staff/application-queue.blade.php -->
 <div>
-    <input wire:model.live.debounce.300ms="search" placeholder="Search reference code" />
+    <input
+        wire:model.live.debounce.300ms="search"
+        placeholder="Search reference code"
+    />
     <select wire:model.live="status">
         <option value="">All statuses</option>
         <option value="submitted">Submitted</option>
@@ -190,16 +258,19 @@ class ApplicationQueue extends Component
 
     <table>
         @foreach($applications as $application)
-            <tr>
-                <td>{{ $application->reference_code }}</td>
-                <td>{{ $application->applicant_last_name }}</td>
-                <td>{{ $application->status }}</td>
-                <td>
-                    <a href="/applications/{{ $application->application_id }}" wire:navigate>
-                        View
-                    </a>
-                </td>
-            </tr>
+        <tr>
+            <td>{{ $application->reference_code }}</td>
+            <td>{{ $application->applicant_last_name }}</td>
+            <td>{{ $application->status }}</td>
+            <td>
+                <a
+                    href="/applications/{{ $application->application_id }}"
+                    wire:navigate
+                >
+                    View
+                </a>
+            </td>
+        </tr>
         @endforeach
     </table>
 
@@ -208,26 +279,30 @@ class ApplicationQueue extends Component
 ```
 
 ### 2. Alpine.js for Client-Side Only Interactions
+
 Use Alpine.js whenever the interaction does not need the server — modals, toggles, show/hide, confirmations.
+
 ```html
 <!-- Confirmation modal before approving -->
 <div x-data="{ confirmOpen: false, action: '' }">
-    <button @click="confirmOpen = true; action = 'approve'">
-        Approve
-    </button>
+    <button @click="confirmOpen = true; action = 'approve'">Approve</button>
 
     <div x-show="confirmOpen" class="fixed inset-0 bg-black bg-opacity-50">
         <div class="bg-white p-6 rounded">
             <p>Are you sure you want to approve this application?</p>
             <button @click="confirmOpen = false">Cancel</button>
-            <button @click="$wire.approve(); confirmOpen = false">Confirm</button>
+            <button @click="$wire.approve(); confirmOpen = false">
+                Confirm
+            </button>
         </div>
     </div>
 </div>
 ```
 
 ### 3. wire:navigate for SPA-Like Navigation
+
 Add `wire:navigate` to all internal links to get instant SPA-like page transitions.
+
 ```html
 <!-- Always use wire:navigate on internal links -->
 <a href="/applications" wire:navigate>Applications</a>
@@ -235,7 +310,9 @@ Add `wire:navigate` to all internal links to get instant SPA-like page transitio
 ```
 
 ### 4. Everything is a Component
+
 Never repeat UI markup. Extract repeating elements into Blade components or Livewire components.
+
 ```bash
 # Create a new Livewire component
 php artisan make:livewire AicsStaff/ApplicationQueue
@@ -245,8 +322,10 @@ php artisan make:component ui/Button
 ```
 
 ### 5. Props Down, Events Up in Livewire
+
 - Pass data to child Livewire components via props
 - Use Livewire events to communicate from child to parent
+
 ```php
 // Child fires event
 $this->dispatch('application-approved', applicationId: $this->applicationId);
@@ -261,7 +340,9 @@ public function handleApproved($applicationId) { }
 ## Livewire Patterns for AICS
 
 ### Pattern 1: Live Search Queue
+
 Used for all application and voucher queues.
+
 ```php
 class ApplicationQueue extends Component
 {
@@ -297,7 +378,9 @@ class ApplicationQueue extends Component
 ```
 
 ### Pattern 2: Dynamic Requirements Form
+
 Used for application submission — requirements update when category changes.
+
 ```php
 class ApplicationForm extends Component
 {
@@ -346,7 +429,9 @@ class ApplicationForm extends Component
 ```
 
 ### Pattern 3: Action with Confirmation
+
 Used for approve, reject, forward actions.
+
 ```php
 class ApplicationDetail extends Component
 {
@@ -394,7 +479,9 @@ class ApplicationDetail extends Component
 ```
 
 ### Pattern 4: File Upload
+
 Used for documents, social case study, allotment slip.
+
 ```php
 class CaseStudyUpload extends Component
 {
@@ -429,7 +516,9 @@ class CaseStudyUpload extends Component
 ```
 
 ### Pattern 5: Application Timeline
+
 Used to display ApplicationLog as parcel tracking.
+
 ```php
 class ApplicationTimeline extends Component
 {
@@ -446,28 +535,29 @@ class ApplicationTimeline extends Component
     }
 }
 ```
+
 ```html
 <!-- livewire/shared/application-timeline.blade.php -->
 <div>
     @foreach($logs as $log)
-        <div class="flex gap-4">
-            <div class="flex flex-col items-center">
-                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                @if(!$loop->last)
-                    <div class="w-0.5 h-full bg-gray-200"></div>
-                @endif
-            </div>
-            <div class="pb-6">
-                <p class="font-medium">{{ $log->action }}</p>
-                <p class="text-sm text-gray-500">
-                    {{ $log->performedBy?->first_name ?? 'System' }}
-                    · {{ $log->timestamp->diffForHumans() }}
-                </p>
-                @if($log->remarks)
-                    <p class="text-sm mt-1">{{ $log->remarks }}</p>
-                @endif
-            </div>
+    <div class="flex gap-4">
+        <div class="flex flex-col items-center">
+            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+            @if(!$loop->last)
+            <div class="w-0.5 h-full bg-gray-200"></div>
+            @endif
         </div>
+        <div class="pb-6">
+            <p class="font-medium">{{ $log->action }}</p>
+            <p class="text-sm text-gray-500">
+                {{ $log->performedBy?->first_name ?? 'System' }} · {{
+                $log->timestamp->diffForHumans() }}
+            </p>
+            @if($log->remarks)
+            <p class="text-sm mt-1">{{ $log->remarks }}</p>
+            @endif
+        </div>
+    </div>
     @endforeach
 </div>
 ```
@@ -477,11 +567,15 @@ class ApplicationTimeline extends Component
 ## Alpine.js Patterns for AICS
 
 ### Modal Pattern
+
 ```html
 <div x-data="{ open: false }">
     <button @click="open = true">Open</button>
     <div x-show="open" x-trap="open" class="fixed inset-0 z-50">
-        <div class="absolute inset-0 bg-black opacity-50" @click="open = false"></div>
+        <div
+            class="absolute inset-0 bg-black opacity-50"
+            @click="open = false"
+        ></div>
         <div class="relative bg-white rounded p-6 max-w-md mx-auto mt-20">
             <button @click="open = false">Close</button>
             <slot />
@@ -491,6 +585,7 @@ class ApplicationTimeline extends Component
 ```
 
 ### Confirm Before Action Pattern
+
 ```html
 <div x-data="{ confirm: false }">
     <button @click="confirm = true">Approve</button>
@@ -503,12 +598,19 @@ class ApplicationTimeline extends Component
 ```
 
 ### Tabs Pattern
+
 ```html
 <div x-data="{ tab: 'info' }">
-    <button @click="tab = 'info'" :class="tab === 'info' ? 'border-b-2 border-blue-500' : ''">
+    <button
+        @click="tab = 'info'"
+        :class="tab === 'info' ? 'border-b-2 border-blue-500' : ''"
+    >
         Information
     </button>
-    <button @click="tab = 'documents'" :class="tab === 'documents' ? 'border-b-2 border-blue-500' : ''">
+    <button
+        @click="tab = 'documents'"
+        :class="tab === 'documents' ? 'border-b-2 border-blue-500' : ''"
+    >
         Documents
     </button>
     <div x-show="tab === 'info'">Application info here</div>
@@ -517,12 +619,16 @@ class ApplicationTimeline extends Component
 ```
 
 ### Toast Notification Pattern
+
 ```html
 <div
     x-data="{ show: false, message: '' }"
     x-on:action-completed.window="show = true; message = $event.detail.message; setTimeout(() => show = false, 3000)"
 >
-    <div x-show="show" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded">
+    <div
+        x-show="show"
+        class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded"
+    >
         <span x-text="message"></span>
     </div>
 </div>
@@ -533,6 +639,7 @@ class ApplicationTimeline extends Component
 ## Required States for Every Dynamic Component
 
 Every Livewire component that fetches data must handle all three states:
+
 ```html
 <!-- Loading state -->
 <div wire:loading>
@@ -542,11 +649,9 @@ Every Livewire component that fetches data must handle all three states:
 <!-- Empty state -->
 <div wire:loading.remove>
     @if($items->isEmpty())
-        <div class="text-center py-12 text-gray-500">
-            No records found.
-        </div>
+    <div class="text-center py-12 text-gray-500">No records found.</div>
     @else
-        <!-- render items -->
+    <!-- render items -->
     @endif
 </div>
 
@@ -558,6 +663,7 @@ Every Livewire component that fetches data must handle all three states:
 ## Application Status Badge Colors
 
 Use these Tailwind classes consistently across all role dashboards:
+
 ```php
 // In a Blade component or helper
 function statusColor(string $status): string {
@@ -585,6 +691,7 @@ function statusColor(string $status): string {
 ---
 
 ## Accessibility and UX Rules
+
 - All form fields must have visible labels — never placeholder only
 - Required fields must be marked with asterisk
 - Error messages must be descriptive — not just "Invalid input"
@@ -598,6 +705,7 @@ function statusColor(string $status): string {
 ---
 
 ## Artisan Commands for This Stack
+
 ```bash
 # Create a new Livewire component
 php artisan make:livewire ComponentName
@@ -621,6 +729,7 @@ php artisan optimize:clear
 ---
 
 ## Change Log
-| Date | Change | Updated By |
-|---|---|---|
-| | Initial frontend guide created for TALL stack | |
+
+| Date | Change                                        | Updated By |
+| ---- | --------------------------------------------- | ---------- |
+|      | Initial frontend guide created for TALL stack |            |
