@@ -27,4 +27,7 @@ Route::middleware(['supabase.auth', 'role:admin,system_admin'])->group(function 
     Route::get('/dashboard/content/{tab}', [AuthIntegrationController::class, 'dashboardContent'])
         ->where('tab', '[a-z\-]+')
         ->name('dashboard.content');
+
+    Route::post('/admin/users', [AuthIntegrationController::class, 'storeUser'])
+        ->name('admin.users.store');
 });

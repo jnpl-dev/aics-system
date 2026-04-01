@@ -314,6 +314,143 @@ class SupabaseAuthIntegrationTest extends TestCase
             ->assertSee('AUTH_LOGIN_FAILED');
     }
 
+    public function test_user_management_tab_renders_filtered_users(): void
+    {
+        DB::table('user')->insert([
+            [
+                'first_name' => 'Admin',
+                'last_name' => 'User',
+                'email' => 'admin@example.com',
+                'password' => 'hashed-password',
+                'role' => 'admin',
+                'status' => 'active',
+                'created_at' => now(),
+            ],
+            [
+                'first_name' => 'Staff',
+                'last_name' => 'Member',
+                'email' => 'staff@example.com',
+                'password' => 'hashed-password',
+                'role' => 'aics_staff',
+                'status' => 'active',
+                'created_at' => now(),
+            ],
+        ]);
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'email' => 'admin@example.com',
+                'id' => 'supabase-admin-id',
+            ], 200),
+        ]);
+
+        Cache::put('auth:otp:verified:'.hash('sha256', 'admin-token'), [
+            'email' => 'admin@example.com',
+            'verified_at' => now()->toIso8601String(),
+        ], now()->addHour());
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer admin-token',
+        ])->get('/dashboard/content/user-management?user_role=admin');
+
+        $response
+            ->assertStatus(200)
+            ->assertSee('User management')
+            ->assertSee('admin@example.com')
+            ->assertDontSee('staff@example.com');
+    }
+
+    public function test_admin_can_create_user_with_valid_password_rule(): void
+    {
+        DB::table('user')->insert([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@example.com',
+            'password' => 'hashed-password',
+            'role' => 'admin',
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'email' => 'admin@example.com',
+                'id' => 'supabase-admin-id',
+            ], 200),
+        ]);
+
+        Cache::put('auth:otp:verified:'.hash('sha256', 'admin-token'), [
+            'email' => 'admin@example.com',
+            'verified_at' => now()->toIso8601String(),
+        ], now()->addHour());
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer admin-token',
+        ])->post('/admin/users', [
+            'first_name' => '  New  ',
+            'last_name' => '  Staff  ',
+            'email' => 'NEW.STAFF@EXAMPLE.COM',
+            'password' => 'Strong#123',
+            'role' => 'aics_staff',
+        ]);
+
+        $response
+            ->assertStatus(302)
+            ->assertRedirect('/dashboard?tab=user-management');
+
+        $this->assertDatabaseHas('user', [
+            'first_name' => 'New',
+            'last_name' => 'Staff',
+            'email' => 'new.staff@example.com',
+            'role' => 'aics_staff',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_admin_create_user_fails_with_weak_password(): void
+    {
+        DB::table('user')->insert([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@example.com',
+            'password' => 'hashed-password',
+            'role' => 'admin',
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        Http::fake([
+            'https://example.supabase.co/auth/v1/user' => Http::response([
+                'email' => 'admin@example.com',
+                'id' => 'supabase-admin-id',
+            ], 200),
+        ]);
+
+        Cache::put('auth:otp:verified:'.hash('sha256', 'admin-token'), [
+            'email' => 'admin@example.com',
+            'verified_at' => now()->toIso8601String(),
+        ], now()->addHour());
+
+        $response = $this->from('/dashboard?tab=user-management')->withHeaders([
+            'Authorization' => 'Bearer admin-token',
+        ])->post('/admin/users', [
+            'first_name' => 'New',
+            'last_name' => 'Staff',
+            'email' => 'new.staff@example.com',
+            'password' => 'weak',
+            'role' => 'aics_staff',
+        ]);
+
+        $response
+            ->assertStatus(302)
+            ->assertRedirect('/dashboard?tab=user-management')
+            ->assertSessionHasErrors(['password']);
+
+        $this->assertDatabaseMissing('user', [
+            'email' => 'new.staff@example.com',
+        ]);
+    }
+
     public function test_admin_route_blocks_non_admin_users(): void
     {
         DB::table('user')->insert([

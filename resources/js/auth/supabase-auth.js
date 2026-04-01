@@ -752,7 +752,90 @@ function initDashboardFlow() {
 
             loadingEl.classList.toggle("hidden", !isLoading);
         };
+        const emitDashboardFragmentUpdated = () => {
+            if (!(contentEl instanceof HTMLElement)) {
+                return;
+            }
+
+            document.dispatchEvent(
+                new CustomEvent("aics:dashboard-fragment-updated", {
+                    detail: {
+                        container: contentEl,
+                    },
+                }),
+            );
+        };
+        let liveSearchDebounceTimer = null;
+
+        const captureLiveSearchState = () => {
+            const activeElement = document.activeElement;
+            if (!(activeElement instanceof HTMLInputElement)) {
+                return null;
+            }
+
+            if (!activeElement.matches("[data-live-search-input]")) {
+                return null;
+            }
+
+            return {
+                id: activeElement.id,
+                name: activeElement.name,
+                value: activeElement.value,
+                selectionStart: activeElement.selectionStart,
+                selectionEnd: activeElement.selectionEnd,
+            };
+        };
+
+        const restoreLiveSearchState = (state) => {
+            if (!state) {
+                return;
+            }
+
+            const selector = state.id
+                ? `#${CSS.escape(state.id)}`
+                : `input[data-live-search-input][name="${CSS.escape(state.name)}"]`;
+
+            const nextInput = document.querySelector(selector);
+            if (!(nextInput instanceof HTMLInputElement)) {
+                return;
+            }
+
+            nextInput.focus({ preventScroll: true });
+            nextInput.value = state.value;
+
+            if (
+                Number.isInteger(state.selectionStart) &&
+                Number.isInteger(state.selectionEnd)
+            ) {
+                nextInput.setSelectionRange(
+                    state.selectionStart,
+                    state.selectionEnd,
+                );
+            }
+        };
+
+        const buildFragmentUrlFromForm = (form) => {
+            const action =
+                form.getAttribute("action") ||
+                endpointTemplate.replace("__TAB__", "user-management");
+            const formData = new FormData(form);
+            const search = new URLSearchParams();
+
+            formData.forEach((value, key) => {
+                const normalized =
+                    typeof value === "string" ? value.trim() : "";
+                if (normalized !== "") {
+                    search.set(key, normalized);
+                }
+            });
+
+            return search.toString()
+                ? `${action}?${search.toString()}`
+                : action;
+        };
+
         const loadContentUrl = async (url) => {
+            const liveSearchState = captureLiveSearchState();
             setLoading(true);
 
             try {
@@ -778,6 +861,8 @@ function initDashboardFlow() {
                 }
 
                 contentEl.innerHTML = await response.text();
+                emitDashboardFragmentUpdated();
+                restoreLiveSearchState(liveSearchState);
             } catch (error) {
                 contentEl.innerHTML =
                     '<div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">Failed to load this section. Please try again.</div>';
@@ -867,6 +952,7 @@ function initDashboardFlow() {
 
             if (memoryCache[tab]?.html) {
                 contentEl.innerHTML = memoryCache[tab].html;
+                emitDashboardFragmentUpdated();
                 if (pageTitleEl) {
                     pageTitleEl.textContent =
                         memoryCache[tab].title ?? getTitleFromTab(tab);
@@ -912,6 +998,7 @@ function initDashboardFlow() {
                 const title = getTitleFromTab(tab);
 
                 contentEl.innerHTML = html;
+                emitDashboardFragmentUpdated();
                 if (pageTitleEl) {
                     pageTitleEl.textContent = title;
                 }
@@ -981,7 +1068,9 @@ function initDashboardFlow() {
         contentEl.addEventListener("click", (event) => {
             const target =
                 event.target instanceof Element
-                    ? event.target.closest("a[data-audit-pagination]")
+                    ? event.target.closest(
+                          "a[data-dashboard-pagination], a[data-audit-pagination]",
+                      )
                     : null;
 
             if (!(target instanceof HTMLAnchorElement)) {
@@ -990,6 +1079,50 @@ function initDashboardFlow() {
 
             event.preventDefault();
             loadContentUrl(target.href);
+        });
+
+        contentEl.addEventListener("submit", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLFormElement)) {
+                return;
+            }
+
+            if (!target.matches("form[data-dashboard-fragment-form]")) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (liveSearchDebounceTimer) {
+                window.clearTimeout(liveSearchDebounceTimer);
+                liveSearchDebounceTimer = null;
+            }
+
+            loadContentUrl(buildFragmentUrlFromForm(target));
+        });
+
+        contentEl.addEventListener("input", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) {
+                return;
+            }
+
+            if (!target.matches("[data-live-search-input]")) {
+                return;
+            }
+
+            const form = target.closest("form[data-dashboard-fragment-form]");
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+
+            if (liveSearchDebounceTimer) {
+                window.clearTimeout(liveSearchDebounceTimer);
+            }
+
+            liveSearchDebounceTimer = window.setTimeout(() => {
+                loadContentUrl(buildFragmentUrlFromForm(form));
+            }, 300);
         });
 
         window.addEventListener("popstate", () => {

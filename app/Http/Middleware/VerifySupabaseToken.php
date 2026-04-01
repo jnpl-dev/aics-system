@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class VerifySupabaseToken
 {
@@ -46,14 +47,18 @@ class VerifySupabaseToken
 
         if (! $response->successful()) {
             if (Schema::hasTable('audit_log')) {
-                AuditLog::query()->create([
-                    'user_id' => 0,
-                    'module' => 'authentication',
-                    'action' => 'login',
-                    'description' => 'event=AUTH_SESSION_EXPIRED; reason=invalid_or_expired_supabase_token',
-                    'ip_address' => $request->ip(),
-                    'timestamp' => now(),
-                ]);
+                try {
+                    AuditLog::query()->create([
+                        'user_id' => 0,
+                        'module' => 'authentication',
+                        'action' => 'login',
+                        'description' => 'event=AUTH_SESSION_EXPIRED; reason=invalid_or_expired_supabase_token',
+                        'ip_address' => $request->ip(),
+                        'timestamp' => now(),
+                    ]);
+                } catch (Throwable) {
+                    // Non-fatal: some environments enforce FK on audit_log.user_id and reject anonymous user_id=0.
+                }
             }
 
             return $this->unauthorized('Invalid or expired Supabase token.');

@@ -1,0 +1,1 @@
+{{-- Deprecated: Password checker UI removed. Keep this placeholder to avoid accidental component resolution errors in stale views. --}}

@@ -18,7 +18,7 @@ Phase 2: Authentication and Access Management
 
 ## In Progress
 
-- [ ] None currently
+- [ ] Implement user registration (admin creates accounts only) — currently not functioning end-to-end
 
 ## Upcoming Phases
 
@@ -49,7 +49,7 @@ Phase 2: Authentication and Access Management
 
 ### Phase 3: System Administration
 
-- [ ] Build user management page
+- [x] Build user management page
 - [ ] Build role and permission assignment
 - [ ] Build password reset for users
 - [ ] Build SMS configuration page
@@ -173,27 +173,30 @@ Phase 2: Authentication and Access Management
 
 ## Change Log
 
-| Date       | Change                                                                                                                                                       | Updated By |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-|            | Initial setup                                                                                                                                                |            |
-| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development   | Copilot    |
-| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message                                                 | Copilot    |
-| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error                                  | Copilot    |
-| 2026-03-30 | Phase 1 checklist normalized and marked complete after verification (git initialized, env configured, MySQL connected, migrations ran, tests passing)        | Copilot    |
-| 2026-03-31 | Cleaned unused rollback artifacts (orphan Livewire auth/dashboard files, layouts, chart module, and prototype component files) to keep the workspace tidy    | Copilot    |
-| 2026-03-31 | Added Supabase Auth setup scaffolding (env/config, `supabase.auth` token middleware, `role` RBAC middleware, middleware tests, and docs usage examples)      | Copilot    |
-| 2026-03-31 | Implemented Supabase login integration slice (`/login`, `/auth/session`, `/dashboard`, `/admin/ping`, `/auth/logout`) with frontend flow and feature tests   | Copilot    |
-| 2026-03-31 | Added email OTP MFA flow (`/mfa`, OTP request/verify endpoints, MFA middleware enforcement, and updated auth integration tests)                              | Copilot    |
-| 2026-03-31 | Reverted authentication to simple Supabase email/password flow and removed active MFA route/UI flow from runtime and docs.                                   | Copilot    |
-| 2026-03-31 | Refactored admin dashboard to single-page dynamic tab loading with cached tab fragments (`sessionStorage`) and documented the dashboard navigation standard. | Copilot    |
-| 2026-03-31 | Finalized password hashing using Laravel hashed cast (bcrypt/Argon2 compatible), aligned user factory fields, and added hashing behavior unit tests.         | Copilot    |
-| 2026-03-31 | Implemented mandatory 6-digit email OTP verification for all roles after password login, with protected route enforcement and OTP integration tests.         | Copilot    |
-| 2026-03-31 | Removed temporary OTP fallback/debug response hints and aligned docs to strict email-only OTP delivery behavior.                                             | Copilot    |
-| 2026-03-31 | Improved login OTP UX: immediate transition to OTP step after password auth (while OTP email request continues), with guarded pending-action states.         | Copilot    |
-| 2026-03-31 | Added reusable `x-shared.button` component with `primary`/`secondary`/`tertiary` variants and integrated it into login + OTP actions.                        | Copilot    |
-| 2026-03-31 | Added button loading indicators: built-in spinner plus optional `loadingText` label swap during async operations (sign in, verify, resend).                  | Copilot    |
-| 2026-04-01 | Implemented authentication login-attempt tracking with persisted `audit_log` records and rendered those records in the Audit Log dashboard tab.              | Copilot    |
-| 2026-04-01 | Refined audit event taxonomy with explicit auth/OTP event codes, added failed login capture endpoint, and recorded session-expired events.                   | Copilot    |
-| 2026-04-01 | Added lockout policy for authentication: 5 failed login attempts trigger a 15-minute cooldown, with backend cooldown-check endpoint and frontend pre-check.  | Copilot    |
-| 2026-04-01 | Upgraded Audit Log table UX/performance: 20-row server pagination, internal scroll container, sticky headers, and in-tab AJAX pagination navigation.         | Copilot    |
-| 2026-04-01 | Fixed dashboard audit “View latest” and stale fragment cache behavior by normalizing fragment links and bumping tab cache version with legacy cache cleanup. | Copilot    |
+| Date       | Change                                                                                                                                                             | Updated By |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+|            | Initial setup                                                                                                                                                      |            |
+| 2026-03-30 | Documentation alignment completed: canonical application statuses, workflow transitions, and status-to-SMS trigger mapping standardized before development         | Copilot    |
+| 2026-03-30 | Connected Laravel to MySQL database `aics_system` and added serve-time terminal DB connection status message                                                       | Copilot    |
+| 2026-03-30 | Ran Laravel migrations on MySQL `aics_system`; created missing `sessions` table and resolved SQLSTATE[42S02] sessions error                                        | Copilot    |
+| 2026-03-30 | Phase 1 checklist normalized and marked complete after verification (git initialized, env configured, MySQL connected, migrations ran, tests passing)              | Copilot    |
+| 2026-03-31 | Cleaned unused rollback artifacts (orphan Livewire auth/dashboard files, layouts, chart module, and prototype component files) to keep the workspace tidy          | Copilot    |
+| 2026-03-31 | Added Supabase Auth setup scaffolding (env/config, `supabase.auth` token middleware, `role` RBAC middleware, middleware tests, and docs usage examples)            | Copilot    |
+| 2026-03-31 | Implemented Supabase login integration slice (`/login`, `/auth/session`, `/dashboard`, `/admin/ping`, `/auth/logout`) with frontend flow and feature tests         | Copilot    |
+| 2026-03-31 | Added email OTP MFA flow (`/mfa`, OTP request/verify endpoints, MFA middleware enforcement, and updated auth integration tests)                                    | Copilot    |
+| 2026-03-31 | Reverted authentication to simple Supabase email/password flow and removed active MFA route/UI flow from runtime and docs.                                         | Copilot    |
+| 2026-03-31 | Refactored admin dashboard to single-page dynamic tab loading with cached tab fragments (`sessionStorage`) and documented the dashboard navigation standard.       | Copilot    |
+| 2026-03-31 | Finalized password hashing using Laravel hashed cast (bcrypt/Argon2 compatible), aligned user factory fields, and added hashing behavior unit tests.               | Copilot    |
+| 2026-03-31 | Implemented mandatory 6-digit email OTP verification for all roles after password login, with protected route enforcement and OTP integration tests.               | Copilot    |
+| 2026-03-31 | Removed temporary OTP fallback/debug response hints and aligned docs to strict email-only OTP delivery behavior.                                                   | Copilot    |
+| 2026-03-31 | Improved login OTP UX: immediate transition to OTP step after password auth (while OTP email request continues), with guarded pending-action states.               | Copilot    |
+| 2026-03-31 | Added reusable `x-shared.button` component with `primary`/`secondary`/`tertiary` variants and integrated it into login + OTP actions.                              | Copilot    |
+| 2026-03-31 | Added button loading indicators: built-in spinner plus optional `loadingText` label swap during async operations (sign in, verify, resend).                        | Copilot    |
+| 2026-04-01 | Implemented authentication login-attempt tracking with persisted `audit_log` records and rendered those records in the Audit Log dashboard tab.                    | Copilot    |
+| 2026-04-01 | Refined audit event taxonomy with explicit auth/OTP event codes, added failed login capture endpoint, and recorded session-expired events.                         | Copilot    |
+| 2026-04-01 | Added lockout policy for authentication: 5 failed login attempts trigger a 15-minute cooldown, with backend cooldown-check endpoint and frontend pre-check.        | Copilot    |
+| 2026-04-01 | Upgraded Audit Log table UX/performance: 20-row server pagination, internal scroll container, sticky headers, and in-tab AJAX pagination navigation.               | Copilot    |
+| 2026-04-01 | Fixed dashboard audit “View latest” and stale fragment cache behavior by normalizing fragment links and bumping tab cache version with legacy cache cleanup.       | Copilot    |
+| 2026-04-01 | Built the User Management admin tab with searchable/filterable user list, 20-row pagination, and in-tab fragment form/pagination loading.                          | Copilot    |
+| 2026-04-01 | Implemented admin Add User backend flow (`/admin/users`) with Laravel `Password` rule validation, server-side sanitization, and feature tests for success/failure. | Copilot    |
+| 2026-04-01 | Standardized Add User modal field spacing rhythm and preserved compact control height for consistency with filter window spacing conventions.                      | Copilot    |

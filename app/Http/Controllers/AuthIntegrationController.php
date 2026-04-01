@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Throwable;
 
@@ -417,6 +421,65 @@ class AuthIntegrationController extends Controller
         ]);
     }
 
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'min:2', 'max:60'],
+            'last_name' => ['required', 'string', 'min:2', 'max:60'],
+            'email' => ['required', 'string', 'email', 'max:120', Rule::unique('user', 'email')],
+            'password' => [
+                'required',
+                'string',
+                Password::min(6)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
+            'role' => [
+                'required',
+                'string',
+                Rule::in([
+                    'admin',
+                    'system_admin',
+                    'aics_staff',
+                    'mswd_officer',
+                    'mayor_office_staff',
+                    'accountant',
+                    'treasurer',
+                ]),
+            ],
+        ]);
+
+        $sanitizeName = static fn (string $value): string => trim((string) preg_replace('/\s+/', ' ', preg_replace('/[^\pL\s\'\-]/u', '', $value) ?? ''));
+
+        $createdUser = User::query()->create([
+            'first_name' => $sanitizeName((string) $validated['first_name']),
+            'last_name' => $sanitizeName((string) $validated['last_name']),
+            'email' => strtolower(trim((string) $validated['email'])),
+            'password' => (string) $validated['password'],
+            'role' => (string) $validated['role'],
+            'status' => 'active',
+        ]);
+
+        $actor = $request->user();
+        $this->recordAuditEvent(
+            $request,
+            self::EVENT_AUTH_LOGIN_SUCCESS,
+            is_int($actor?->user_id) ? $actor->user_id : 0,
+            is_string($actor?->email) ? $actor->email : null,
+            [
+                'operation' => 'user_created',
+                'created_user_id' => $createdUser->user_id,
+                'created_user_email' => $createdUser->email,
+            ]
+        );
+
+        return redirect()
+            ->route('dashboard', ['tab' => 'user-management'])
+            ->with('status', 'User account created successfully.');
+    }
+
     public function adminPing(Request $request): JsonResponse
     {
         return response()->json([
@@ -450,17 +513,51 @@ class AuthIntegrationController extends Controller
      */
     private function tabData(string $tab, ?Request $request = null): array
     {
-        if ($tab !== 'audit-log') {
-            return [];
-        }
-
         $activeRequest = $request ?? request();
 
-        return [
-            'auditLogs' => AuditLog::query()
-                ->orderByDesc('timestamp')
-                ->paginate(20, ['*'], 'audit_page', (int) $activeRequest->query('audit_page', 1)),
-        ];
+        if ($tab === 'audit-log') {
+            return [
+                'auditLogs' => AuditLog::query()
+                    ->orderByDesc('timestamp')
+                    ->paginate(20, ['*'], 'audit_page', (int) $activeRequest->query('audit_page', 1)),
+            ];
+        }
+
+        if ($tab === 'user-management') {
+            $search = trim((string) $activeRequest->query('user_search', ''));
+            $role = trim((string) $activeRequest->query('user_role', ''));
+            $status = trim((string) $activeRequest->query('user_status', ''));
+
+            return [
+                'users' => User::query()
+                    ->when($search !== '', function ($query) use ($search): void {
+                        $query->where(function ($innerQuery) use ($search): void {
+                            $innerQuery
+                                ->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
+                    })
+                    ->when($role !== '', function ($query) use ($role): void {
+                        if ($role === 'admin') {
+                            $query->whereIn('role', ['admin', 'system_admin']);
+                            return;
+                        }
+
+                        $query->where('role', $role);
+                    })
+                    ->when($status !== '', fn ($query) => $query->where('status', $status))
+                    ->orderByDesc('user_id')
+                    ->paginate(20, ['*'], 'user_page', (int) $activeRequest->query('user_page', 1)),
+                'userManagementFilters' => [
+                    'search' => $search,
+                    'role' => $role,
+                    'status' => $status,
+                ],
+            ];
+        }
+
+        return [];
     }
 
     /**
