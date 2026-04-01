@@ -43,7 +43,7 @@ Phase 2: Authentication and Access Management
 - [x] Implement MFA / OTP verification
 - [x] Implement role-based access control (RBAC) middleware
 - [ ] Implement password reset flow
-- [ ] Implement login attempt tracking
+- [x] Implement login attempt tracking
 - [x] Implement logout
 - [x] Implement route guards per role
 
@@ -53,7 +53,7 @@ Phase 2: Authentication and Access Management
 - [ ] Build role and permission assignment
 - [ ] Build password reset for users
 - [ ] Build SMS configuration page
-- [ ] Build audit log viewer
+- [x] Build audit log viewer
 - [ ] Build system activity monitor
 
 ### Phase 4: Assistance Category and Requirements Management
@@ -192,3 +192,8 @@ Phase 2: Authentication and Access Management
 | 2026-03-31 | Improved login OTP UX: immediate transition to OTP step after password auth (while OTP email request continues), with guarded pending-action states.         | Copilot    |
 | 2026-03-31 | Added reusable `x-shared.button` component with `primary`/`secondary`/`tertiary` variants and integrated it into login + OTP actions.                        | Copilot    |
 | 2026-03-31 | Added button loading indicators: built-in spinner plus optional `loadingText` label swap during async operations (sign in, verify, resend).                  | Copilot    |
+| 2026-04-01 | Implemented authentication login-attempt tracking with persisted `audit_log` records and rendered those records in the Audit Log dashboard tab.              | Copilot    |
+| 2026-04-01 | Refined audit event taxonomy with explicit auth/OTP event codes, added failed login capture endpoint, and recorded session-expired events.                   | Copilot    |
+| 2026-04-01 | Added lockout policy for authentication: 5 failed login attempts trigger a 15-minute cooldown, with backend cooldown-check endpoint and frontend pre-check.  | Copilot    |
+| 2026-04-01 | Upgraded Audit Log table UX/performance: 20-row server pagination, internal scroll container, sticky headers, and in-tab AJAX pagination navigation.         | Copilot    |
+| 2026-04-01 | Fixed dashboard audit “View latest” and stale fragment cache behavior by normalizing fragment links and bumping tab cache version with legacy cache cleanup. | Copilot    |

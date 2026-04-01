@@ -2,9 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Closure;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +45,17 @@ class VerifySupabaseToken
             ->get($supabaseUrl.$userEndpoint);
 
         if (! $response->successful()) {
+            if (Schema::hasTable('audit_log')) {
+                AuditLog::query()->create([
+                    'user_id' => 0,
+                    'module' => 'authentication',
+                    'action' => 'login',
+                    'description' => 'event=AUTH_SESSION_EXPIRED; reason=invalid_or_expired_supabase_token',
+                    'ip_address' => $request->ip(),
+                    'timestamp' => now(),
+                ]);
+            }
+
             return $this->unauthorized('Invalid or expired Supabase token.');
         }
 

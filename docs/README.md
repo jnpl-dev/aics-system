@@ -137,6 +137,25 @@ OTP behavior note:
 - OTP delivery is strict email send flow.
 - No debug OTP value or fallback delivery hint is exposed by API responses.
 
+Audit note for auth tracking:
+
+- Login-related auth attempts (OTP request, OTP verify outcomes, and logout) are persisted to `audit_log`.
+- The admin **Audit Log** dashboard tab now displays these authentication records.
+
+Current audit event taxonomy:
+
+- Authentication:
+    - `AUTH_LOGIN_SUCCESS`
+    - `AUTH_LOGIN_FAILED`
+    - `AUTH_LOGOUT`
+    - `AUTH_SESSION_EXPIRED`
+- OTP:
+    - `OTP_GENERATED_SENT`
+    - `OTP_VERIFIED`
+    - `OTP_FAILED`
+    - `OTP_EXPIRED`
+    - `OTP_RESEND`
+
 Admin dashboard navigation standard:
 
 - Keep dashboard as a single page (`/dashboard`)

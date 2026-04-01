@@ -9,9 +9,11 @@ Route::get('/', function () {
 
 Route::get('/login', [AuthIntegrationController::class, 'showLogin'])->name('login');
 Route::get('/dashboard', [AuthIntegrationController::class, 'dashboard'])->name('dashboard');
-Route::get('/auth/logout', [AuthIntegrationController::class, 'logout'])->name('auth.logout');
+Route::post('/auth/login-attempt', [AuthIntegrationController::class, 'logLoginAttempt'])->name('auth.login-attempt');
+Route::post('/auth/login-cooldown-check', [AuthIntegrationController::class, 'checkLoginCooldown'])->name('auth.login-cooldown-check');
 
 Route::middleware(['supabase.auth'])->group(function (): void {
+    Route::get('/auth/logout', [AuthIntegrationController::class, 'logout'])->name('auth.logout');
     Route::post('/auth/otp/request', [AuthIntegrationController::class, 'requestOtp'])->name('auth.otp.request');
     Route::post('/auth/otp/verify', [AuthIntegrationController::class, 'verifyOtp'])->name('auth.otp.verify');
     Route::get('/auth/session', [AuthIntegrationController::class, 'session'])->name('auth.session');

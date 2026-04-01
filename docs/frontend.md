@@ -75,6 +75,19 @@ The admin dashboard now uses a **single-page shell** pattern:
 
 When requesting dashboard changes, treat the dashboard as **one page** with **dynamic content regions**. Do not add route-per-tab full-page navigation unless explicitly required.
 
+### Table performance/display standard (Required)
+
+For all large data tables (audit logs, activity feeds, user lists, reports):
+
+- Use server-side pagination by default.
+- Default page size should be **20 rows** unless a feature explicitly needs a different size.
+- Keep table scrolling inside the table container (not the browser window):
+    - wrap tables in a fixed/max-height container
+    - use `overflow-auto` (or `overflow-y-auto` + `overflow-x-auto`) on that container
+    - keep table headers sticky when practical for readability.
+
+Reason: this keeps the dashboard layout stable, reduces DOM load, and avoids whole-page scroll fatigue under heavy datasets.
+
 ---
 
 ## Installation

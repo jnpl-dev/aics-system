@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const TOKEN_KEY = "aics_supabase_access_token";
 const OTP_SESSION_KEY = "aics_otp_session_id";
-const DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v1";
+const LEGACY_DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v1";
+const DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v2";
 const DASHBOARD_ALLOWED_TABS = new Set([
     "dashboard",
     "user-management",
@@ -299,7 +300,65 @@ function initLoginFlow() {
         });
     });
 
-    const requestOtp = async (token) => {
+    const reportLoginAttempt = async (outcome, reason = "") => {
+        const email = emailInput?.value?.trim() ?? "";
+        if (!email) {
+            return null;
+        }
+
+        try {
+            const response = await fetch("/auth/login-attempt", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    email,
+                    outcome,
+                    reason,
+                }),
+            });
+
+            const payload = await response.json();
+
+            return {
+                ok: response.ok,
+                status: response.status,
+                payload,
+            };
+        } catch {
+            // no-op: telemetry should not block auth UX
+            return null;
+        }
+    };
+
+    const checkLoginCooldown = async (email) => {
+        const response = await fetch("/auth/login-cooldown-check", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({
+                email,
+            }),
+        });
+
+        const payload = await response.json();
+
+        return {
+            ok: response.ok,
+            status: response.status,
+            payload,
+        };
+    };
+
+    const requestOtp = async (token, isResend = false) => {
         const response = await fetch("/auth/otp/request", {
             method: "POST",
             headers: {
@@ -309,7 +368,9 @@ function initLoginFlow() {
                 "X-Requested-With": "XMLHttpRequest",
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify({
+                is_resend: isResend,
+            }),
         });
 
         const payload = await response.json();
@@ -350,10 +411,22 @@ function initLoginFlow() {
         const formData = new FormData(form);
         const email = String(formData.get("email") ?? "");
         const password = String(formData.get("password") ?? "");
+        let passwordAuthenticated = false;
 
         try {
             setButtonLoading(passwordSubmitBtn, true);
             setStatus("Signing in...");
+
+            const cooldownState = await checkLoginCooldown(email);
+            if (!cooldownState.ok && cooldownState.status === 429) {
+                throw new Error(
+                    String(
+                        cooldownState.payload?.message ??
+                            "Too many failed attempts. Please try again later.",
+                    ),
+                );
+            }
+
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -367,6 +440,7 @@ function initLoginFlow() {
 
             const token = data.session.access_token;
             localStorage.setItem(TOKEN_KEY, token);
+            passwordAuthenticated = true;
 
             sessionStorage.removeItem(OTP_SESSION_KEY);
             otpRequestPending = true;
@@ -391,6 +465,27 @@ function initLoginFlow() {
         } catch (err) {
             otpRequestPending = false;
             syncOtpActionAvailability();
+
+            if (!passwordAuthenticated) {
+                const attemptResult = await reportLoginAttempt(
+                    "failed",
+                    err instanceof Error
+                        ? err.message
+                        : "Unexpected authentication error.",
+                );
+
+                if (attemptResult?.status === 429) {
+                    setStatus(
+                        String(
+                            attemptResult.payload?.message ??
+                                "Too many failed attempts. Please try again in 15 minutes.",
+                        ),
+                        true,
+                    );
+                    return;
+                }
+            }
+
             setStatus(
                 err instanceof Error
                     ? err.message
@@ -413,6 +508,10 @@ function initLoginFlow() {
         }
 
         if (!token) {
+            await reportLoginAttempt(
+                "session_expired",
+                "Token missing during OTP verification.",
+            );
             setStatus("Session expired. Please sign in again.", true);
             setPasswordFormEnabled(true);
             otpSection?.classList.add("hidden");
@@ -452,6 +551,10 @@ function initLoginFlow() {
     otpResendBtn?.addEventListener("click", async () => {
         const token = getCurrentToken();
         if (!token) {
+            await reportLoginAttempt(
+                "session_expired",
+                "Token missing during OTP resend.",
+            );
             setStatus("Session expired. Please sign in again.", true);
             return;
         }
@@ -466,7 +569,7 @@ function initLoginFlow() {
             syncOtpActionAvailability();
             setButtonLoading(otpResendBtn, true);
             setStatus("Requesting a new OTP...");
-            const otpPayload = await requestOtp(token);
+            const otpPayload = await requestOtp(token, true);
             otpRequestPending = false;
             sessionStorage.setItem(
                 OTP_SESSION_KEY,
@@ -616,6 +719,8 @@ function initDashboardFlow() {
             return;
         }
 
+        sessionStorage.removeItem(LEGACY_DASHBOARD_CACHE_KEY);
+
         const pageTitleEl = document.getElementById("dashboard-page-title");
         const loadingEl = document.getElementById("dashboard-content-loading");
         const endpointTemplate = contentEl.dataset.contentEndpointTemplate;
@@ -646,6 +751,54 @@ function initDashboardFlow() {
             }
 
             loadingEl.classList.toggle("hidden", !isLoading);
+        };
+        const loadContentUrl = async (url) => {
+            setLoading(true);
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        Accept: "text/html",
+                        Authorization: `Bearer ${token}`,
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem(TOKEN_KEY);
+                    sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
+                    window.location.assign("/login");
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to load content (${response.status}).`,
+                    );
+                }
+
+                contentEl.innerHTML = await response.text();
+            } catch (error) {
+                contentEl.innerHTML =
+                    '<div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">Failed to load this section. Please try again.</div>';
+
+                if (output) {
+                    output.textContent = JSON.stringify(
+                        {
+                            endpoint: "dashboard.content.pagination",
+                            status: "error",
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Unknown content loading error.",
+                        },
+                        null,
+                        2,
+                    );
+                }
+            } finally {
+                setLoading(false);
+            }
         };
         const setActiveTabVisuals = (activeTab) => {
             document
@@ -823,6 +976,20 @@ function initDashboardFlow() {
             event.preventDefault();
             const tab = normalizeTab(target.dataset.dashboardTab);
             loadTab(tab);
+        });
+
+        contentEl.addEventListener("click", (event) => {
+            const target =
+                event.target instanceof Element
+                    ? event.target.closest("a[data-audit-pagination]")
+                    : null;
+
+            if (!(target instanceof HTMLAnchorElement)) {
+                return;
+            }
+
+            event.preventDefault();
+            loadContentUrl(target.href);
         });
 
         window.addEventListener("popstate", () => {
