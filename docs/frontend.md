@@ -4,19 +4,20 @@
 
 - **Backend:** Laravel 11
 - **Templating:** Blade
-- **Dynamic components:** Livewire 3
-- **Client-side interactivity:** Alpine.js
+- **Dynamic content loading:** Async Blade fragment requests (`/dashboard/content/{tab}`)
+- **Client-side interactivity:** Custom JavaScript modules bundled with Vite
 - **Styling:** Tailwind CSS
 - **Asset bundler:** Vite (built into Laravel)
-- **SPA-like navigation:** wire:navigate (built into Livewire 3)
+- **SPA-like behavior:** single dashboard shell with in-place tab content swapping
 
 ## Why This Stack
 
 - Everything is written in PHP — no separate JavaScript framework
-- Livewire handles all server-side reactivity — live search, dynamic forms, file uploads, pagination
-- Alpine.js handles purely client-side interactions — modals, toggles, show/hide, confirmations
-- wire:navigate gives SPA-like instant page transitions without a separate frontend framework
-- AI tools generate Livewire and Alpine code very well — ideal for vibe coding
+- Blade handles server-rendered views and tab fragments
+- Custom JS handles dashboard tab loading, caching, and in-tab interactions
+- This keeps implementation explicit and compatible with current auth/session flow
+
+> Note: sections below that discuss Livewire/Alpine patterns are retained as legacy reference for possible future migration, but they are **not** the active runtime standard.
 
 ## Design Tokens (Mandatory for New UI)
 
@@ -92,23 +93,14 @@ Reason: this keeps the dashboard layout stable, reduces DOM load, and avoids who
 
 ## Installation
 
-This stack is installed via Laravel Breeze:
+Current runtime setup:
 
 ```bash
-composer require laravel/breeze --dev
-php artisan breeze:install livewire
 npm install
 npm run dev
 ```
 
-This installs and configures:
-
-- Livewire 3
-- Alpine.js
-- Tailwind CSS
-- Vite configuration
-- Authentication scaffolding (login, register, password reset)
-- Basic layouts and components
+This configures frontend assets via Vite for Blade + JS modules.
 
 ---
 

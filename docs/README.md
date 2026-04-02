@@ -48,11 +48,11 @@ Provider: PhilSMS
 
 3️. Frontend / Scanning
 Templating: Blade
-Dynamic components: Livewire 3
-Client-side interactivity: Alpine.js
+Dynamic sections: Server-rendered Blade fragments (`/dashboard/content/{tab}`)
+Client-side interactivity: Custom JavaScript (Vite)
 Styling: Tailwind CSS
 Asset bundler: Vite (built into Laravel)
-SPA-like navigation: wire:navigate (built into Livewire 3)
+SPA-like behavior: single dashboard shell + async tab content loading
 Camera input + auto-crop:
 opencv.js (auto detect edges)
 ocropper.js fallback

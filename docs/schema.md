@@ -13,7 +13,7 @@
 | last_name  | VARCHAR(100)                                                                | NOT NULL                            |
 | email      | VARCHAR(255)                                                                | NOT NULL, UNIQUE                    |
 | password   | VARCHAR(255)                                                                | NOT NULL                            |
-| role       | ENUM(aics_staff, mswd_officer, mayors_office, accountant, treasurer, admin) | NOT NULL                            |
+| role       | ENUM(aics_staff, mswd_officer, mayor_office_staff, accountant, treasurer, admin, system_admin) | NOT NULL                            |
 | status     | ENUM(active, inactive)                                                      | NOT NULL, DEFAULT active            |
 | created_at | DATETIME                                                                    | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 

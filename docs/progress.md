@@ -18,7 +18,7 @@ Phase 2: Authentication and Access Management
 
 ## In Progress
 
-- [ ] Implement user registration (admin creates accounts only) — currently not functioning end-to-end
+- [ ] Implement user registration (admin creates accounts only) — backend endpoint/validation complete; UI flow still being stabilized end-to-end
 
 ## Upcoming Phases
 
