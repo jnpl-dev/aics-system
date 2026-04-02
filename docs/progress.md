@@ -18,7 +18,7 @@ Phase 2: Authentication and Access Management
 
 ## In Progress
 
-- [ ] Implement user registration (admin creates accounts only) — backend endpoint/validation complete; UI flow still being stabilized end-to-end
+- [ ] Implement password reset flow
 
 ## Upcoming Phases
 
@@ -36,7 +36,7 @@ Phase 2: Authentication and Access Management
 
 ### Phase 2: Authentication and Access Management
 
-- [ ] Implement user registration (admin creates accounts only)
+- [x] Implement user registration (admin creates accounts only)
 - [x] Implement login with email and password
 - [x] Implement password hashing (bcrypt or Argon2)
 - [x] Implement JWT or session-based authentication
@@ -200,3 +200,10 @@ Phase 2: Authentication and Access Management
 | 2026-04-01 | Built the User Management admin tab with searchable/filterable user list, 20-row pagination, and in-tab fragment form/pagination loading.                          | Copilot    |
 | 2026-04-01 | Implemented admin Add User backend flow (`/admin/users`) with Laravel `Password` rule validation, server-side sanitization, and feature tests for success/failure. | Copilot    |
 | 2026-04-01 | Standardized Add User modal field spacing rhythm and preserved compact control height for consistency with filter window spacing conventions.                      | Copilot    |
+| 2026-04-02 | Completed Add User end-to-end flow: dashboard modal now submits with bearer-authenticated AJAX, returns JSON validation/success responses, refreshes User Management tab, persists users to DB, and records user creation in `audit_log` as `create` action (verified by feature tests + frontend build). | Copilot    |
+| 2026-04-02 | Fixed User Management tab nested-form markup that could intercept Add User submission; Add User modal form is now isolated from filter form so submit reliably reaches `/admin/users` and refreshes the tab list. | Copilot    |
+| 2026-04-02 | Fixed live Add User persistence blocker by aligning MySQL `user.role` enum with documented RBAC roles (`mayor_office_staff`, `system_admin`), which prevented inserts for those roles due SQL enum mismatch. | Copilot    |
+| 2026-04-02 | Unified `admin` and `system_admin` behavior: role middleware now normalizes `system_admin` to `admin`, protected admin routes use canonical `role:admin`, Add User role select now shows a single Admin role, and docs were aligned to alias semantics. | Copilot    |
+| 2026-04-02 | Fixed new-account login failure by provisioning Supabase Auth credentials during `/admin/users` creation (with graceful error handling and rollback cleanup), ensuring newly created accounts can authenticate successfully. | Copilot    |
+| 2026-04-02 | Added `docs/troubleshooting.md` incident log covering Add User modal no-save issue, role enum mismatch, invalid login for newly created users, and Supabase endpoint test-fake failures, including root causes and repeatable fixes. | Copilot    |
+| 2026-04-02 | Performed cleanup pass on auth/user management code: removed unused exception variables, removed non-essential unused Supabase endpoint fakes in unrelated tests, fixed controller indentation, and re-verified tests/build. | Copilot    |

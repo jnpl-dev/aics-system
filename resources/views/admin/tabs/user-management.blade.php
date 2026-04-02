@@ -37,24 +37,22 @@
             </span>
         </div>
 
-        <form
-            method="GET"
-            action="{{ $basePaginationUrl }}"
-            data-dashboard-fragment-form
-            class="rounded-lg border border-[#1F6336]/10 bg-[#F8FBF8] p-4"
-        >
+        <div class="rounded-lg border border-[#1F6336]/10 bg-[#F8FBF8] p-4">
             <div class="flex flex-col gap-3 md:flex-row md:items-center">
-                <div class="flex-1">
-                <x-shared.search-bar
-                    id="user-search"
-                    name="user_search"
-                    :value="$searchValue"
-                    placeholder="Name or email"
-                    button-text="Search"
-                />
-                </div>
+                <form
+                    method="GET"
+                    action="{{ $basePaginationUrl }}"
+                    data-dashboard-fragment-form
+                    class="flex flex-1"
+                >
+                    <x-shared.search-bar
+                        id="user-search"
+                        name="user_search"
+                        :value="$searchValue"
+                        placeholder="Name or email"
+                        button-text="Search"
+                    />
 
-                <div class="flex items-center gap-2">
                     <x-shared.filter-window
                         :role-options="$roleOptions"
                         :status-options="$statusOptions"
@@ -62,12 +60,13 @@
                         :selected-status="$statusValue"
                         :reset-url="$basePaginationUrl"
                     />
+                </form>
 
+                <div class="flex items-center gap-2 md:shrink-0">
                     <x-shared.add-user-window :action="route('admin.users.store')" />
                 </div>
             </div>
-
-        </form>
+        </div>
     </div>
 
     <div class="max-h-[34rem] overflow-auto px-6 pb-0">

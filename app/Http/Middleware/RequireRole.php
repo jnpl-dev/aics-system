@@ -21,11 +21,19 @@ class RequireRole
             return $this->forbidden('Inactive user cannot access this resource.');
         }
 
-        if ($roles !== [] && ! in_array($user->role, $roles, true)) {
+        $effectiveUserRole = $this->normalizeRole((string) ($user->role ?? ''));
+        $effectiveRequiredRoles = array_map(fn (string $role): string => $this->normalizeRole($role), $roles);
+
+        if ($roles !== [] && ! in_array($effectiveUserRole, $effectiveRequiredRoles, true)) {
             return $this->forbidden('Insufficient role permissions.');
         }
 
         return $next($request);
+    }
+
+    private function normalizeRole(string $role): string
+    {
+        return $role === 'system_admin' ? 'admin' : $role;
     }
 
     private function forbidden(string $message): JsonResponse

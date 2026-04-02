@@ -7,7 +7,6 @@
 
     $roleOptions = [
         'admin' => 'Admin',
-        'system_admin' => 'System Admin',
         'aics_staff' => 'AICS Staff',
         'mswd_officer' => 'MSWD Officer',
         'mayor_office_staff' => 'Mayor\'s Office Staff',

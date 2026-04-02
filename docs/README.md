@@ -87,6 +87,7 @@ Supabase (storage only)
 - [Decisions](./decisions.md)
 - [Notifications](./notifications.md)
 - [API](./api.md)
+- [Troubleshooting](./troubleshooting.md)
 
 ## Supabase Auth Setup (Phase 2)
 

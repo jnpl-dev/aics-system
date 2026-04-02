@@ -1,18 +1,20 @@
 # API Reference
 
 ## Status
+
 Partially implemented. This document reflects currently available auth/admin endpoints and dashboard fragment endpoints.
 
 ## Conventions
 
 - The project currently uses **mixed response types**:
-  - JSON responses for auth/session/OTP/login-attempt/admin ping endpoints
-  - HTML fragment responses for dashboard tab content (`/dashboard/content/{tab}`)
-  - Redirect responses for form-style admin actions (e.g., user creation)
+    - JSON responses for auth/session/OTP/login-attempt/admin ping endpoints
+    - HTML fragment responses for dashboard tab content (`/dashboard/content/{tab}`)
+    - Redirect responses for form-style admin actions (e.g., user creation from full-page forms)
+    - JSON responses for AJAX admin actions inside dashboard fragments (e.g., Add User modal)
 - Protected endpoints require `Authorization: Bearer <token>` and pass through `supabase.auth` middleware.
 - Validation failures:
-  - JSON endpoints: HTTP 422 with validation payload
-  - Form endpoints: redirect back with session errors
+    - JSON endpoints: HTTP 422 with validation payload
+    - Form endpoints: redirect back with session errors
 
 ## Implemented Endpoints
 
@@ -33,5 +35,8 @@ Partially implemented. This document reflects currently available auth/admin end
 ### Admin (`supabase.auth` + role middleware)
 
 - `GET /admin/ping` (`role:admin`) → admin-access check
-- `GET /dashboard/content/{tab}` (`role:admin,system_admin`) → HTML fragment for dashboard tab
-- `POST /admin/users` (`role:admin,system_admin`) → create user (redirect + validation errors in session)
+- `GET /dashboard/content/{tab}` (`role:admin`) → HTML fragment for dashboard tab
+- `POST /admin/users` (`role:admin`) → create user
+    - provisions Supabase Auth credentials first, then creates local `user` row
+    - form submit: redirect + session validation errors
+    - AJAX submit (`Accept: application/json`): `201` success payload or `422` validation payload

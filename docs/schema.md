@@ -6,16 +6,16 @@
 
 ### USER
 
-| Column     | Type                                                                        | Constraints                         |
-| ---------- | --------------------------------------------------------------------------- | ----------------------------------- |
-| user_id    | INT                                                                         | PK, AUTO_INCREMENT                  |
-| first_name | VARCHAR(100)                                                                | NOT NULL                            |
-| last_name  | VARCHAR(100)                                                                | NOT NULL                            |
-| email      | VARCHAR(255)                                                                | NOT NULL, UNIQUE                    |
-| password   | VARCHAR(255)                                                                | NOT NULL                            |
+| Column     | Type                                                                                           | Constraints                         |
+| ---------- | ---------------------------------------------------------------------------------------------- | ----------------------------------- |
+| user_id    | INT                                                                                            | PK, AUTO_INCREMENT                  |
+| first_name | VARCHAR(100)                                                                                   | NOT NULL                            |
+| last_name  | VARCHAR(100)                                                                                   | NOT NULL                            |
+| email      | VARCHAR(255)                                                                                   | NOT NULL, UNIQUE                    |
+| password   | VARCHAR(255)                                                                                   | NOT NULL                            |
 | role       | ENUM(aics_staff, mswd_officer, mayor_office_staff, accountant, treasurer, admin, system_admin) | NOT NULL                            |
-| status     | ENUM(active, inactive)                                                      | NOT NULL, DEFAULT active            |
-| created_at | DATETIME                                                                    | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| status     | ENUM(active, inactive)                                                                         | NOT NULL, DEFAULT active            |
+| created_at | DATETIME                                                                                       | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 ### ASSISTANCE_CATEGORY
 
@@ -234,3 +234,4 @@
 | ---------- | ---------------------------------------------------------------------------------------- | ---------- |
 |            | Initial schema created                                                                   |            |
 | 2026-03-30 | Expanded APPLICATION.status enum with canonical workflow statuses aligned to workflow.md | Copilot    |
+| 2026-04-02 | Aligned `USER.role` enum in runtime DB with RBAC docs (renamed `mayors_office` to `mayor_office_staff`, added `system_admin`) to match allowed roles used by auth/admin flows. | Copilot    |

@@ -44,6 +44,7 @@ class SupabaseAuthIntegrationTest extends TestCase
 
         config()->set('supabase.url', 'https://example.supabase.co');
         config()->set('supabase.anon_key', 'anon-test-key');
+    config()->set('supabase.service_role_key', 'service-role-test-key');
         config()->set('supabase.auth_user_endpoint', '/auth/v1/user');
     }
 
@@ -377,6 +378,10 @@ class SupabaseAuthIntegrationTest extends TestCase
                 'email' => 'admin@example.com',
                 'id' => 'supabase-admin-id',
             ], 200),
+            'https://example.supabase.co/auth/v1/admin/users' => Http::response([
+                'id' => 'supabase-created-user-id',
+                'email' => 'new.staff@example.com',
+            ], 201),
         ]);
 
         Cache::put('auth:otp:verified:'.hash('sha256', 'admin-token'), [
