@@ -901,7 +901,9 @@ function initDashboardFlow() {
             clearAddUserFormErrors(form);
 
             Object.entries(errors).forEach(([field, messages]) => {
-                const errorEl = form.querySelector(`[data-error-for="${field}"]`);
+                const errorEl = form.querySelector(
+                    `[data-error-for="${field}"]`,
+                );
                 if (!(errorEl instanceof HTMLElement)) {
                     return;
                 }
@@ -926,7 +928,8 @@ function initDashboardFlow() {
             }
 
             if (!submitButton.dataset.defaultLabel) {
-                submitButton.dataset.defaultLabel = submitButton.textContent?.trim() ?? "Save User";
+                submitButton.dataset.defaultLabel =
+                    submitButton.textContent?.trim() ?? "Save User";
             }
 
             submitButton.disabled = isSubmitting;
@@ -973,7 +976,10 @@ function initDashboardFlow() {
 
                 if (!response.ok) {
                     throw new Error(
-                        String(payload?.message ?? "Failed to create user account."),
+                        String(
+                            payload?.message ??
+                                "Failed to create user account.",
+                        ),
                     );
                 }
 

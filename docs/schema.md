@@ -230,8 +230,8 @@
 
 ## Change Log
 
-| Date       | Change                                                                                   | Updated By |
-| ---------- | ---------------------------------------------------------------------------------------- | ---------- |
-|            | Initial schema created                                                                   |            |
-| 2026-03-30 | Expanded APPLICATION.status enum with canonical workflow statuses aligned to workflow.md | Copilot    |
+| Date       | Change                                                                                                                                                                         | Updated By |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+|            | Initial schema created                                                                                                                                                         |            |
+| 2026-03-30 | Expanded APPLICATION.status enum with canonical workflow statuses aligned to workflow.md                                                                                       | Copilot    |
 | 2026-04-02 | Aligned `USER.role` enum in runtime DB with RBAC docs (renamed `mayors_office` to `mayor_office_staff`, added `system_admin`) to match allowed roles used by auth/admin flows. | Copilot    |

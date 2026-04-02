@@ -2,14 +2,14 @@
 
 ## Roles
 
-| Role               | Description                                                         |
-| ------------------ | ------------------------------------------------------------------- |
-| aics_staff         | Reviews, validates, codes, and manages applications                 |
-| mswd_officer       | Conducts social case study, prepares voucher                        |
-| mayor_office_staff | Reviews and approves assistance code                                |
-| accountant         | Verifies voucher calculations                                       |
-| treasurer          | Checks fund availability and prepares cheque                        |
-| admin              | Manages user accounts, roles, and system settings                   |
+| Role               | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| aics_staff         | Reviews, validates, codes, and manages applications |
+| mswd_officer       | Conducts social case study, prepares voucher        |
+| mayor_office_staff | Reviews and approves assistance code                |
+| accountant         | Verifies voucher calculations                       |
+| treasurer          | Checks fund availability and prepares cheque        |
+| admin              | Manages user accounts, roles, and system settings   |
 
 Legacy compatibility note:
 

@@ -79,7 +79,7 @@ Auth source mismatch:
 ### Fix Applied
 
 - Updated `AuthIntegrationController::storeUser` to provision Supabase Auth user via:
-  - `POST /auth/v1/admin/users` (service role)
+    - `POST /auth/v1/admin/users` (service role)
 - Local user creation now happens with Supabase provisioning in the same flow
 - Added graceful error handling for Supabase connection/API failures
 - Added rollback cleanup attempt when local DB save fails after Supabase create
@@ -87,11 +87,11 @@ Auth source mismatch:
 ### Prevention Checklist
 
 - Any admin account creation must provision both:
-  - Supabase Auth credentials
-  - local `user` row
+    - Supabase Auth credentials
+    - local `user` row
 - Ensure `.env` has:
-  - `SUPABASE_URL`
-  - `SUPABASE_SERVICE_ROLE_KEY`
+    - `SUPABASE_URL`
+    - `SUPABASE_SERVICE_ROLE_KEY`
 - If login fails for a newly created user, verify both data stores (Supabase + local DB)
 
 ---
