@@ -24,7 +24,7 @@
 @endphp
 
 <div class="relative flex w-full flex-col rounded-xl border border-[#1F6336]/15 bg-white bg-clip-border text-gray-700 shadow-md">
-    <div class="relative mx-4 mt-4 overflow-hidden rounded-none bg-white bg-clip-border text-gray-700">
+    <div class="relative mx-4 mt-4 overflow-visible rounded-none bg-white bg-clip-border text-gray-700">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h5 class="block text-xl font-semibold leading-snug tracking-normal text-[#1F6336]">User management</h5>
@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <div class="max-h-[34rem] overflow-auto px-6 pb-0">
+    <div class="overflow-visible px-6 pb-0">
         <table class="mt-4 w-full min-w-max table-auto text-left">
             <thead class="sticky top-0 z-10">
                 <tr>
@@ -87,6 +87,9 @@
                     </th>
                     <th class="border-y border-[#1F6336]/10 bg-[#F0F3EF] p-4">
                         <p class="text-xs font-semibold uppercase leading-none text-gray-600">Status</p>
+                    </th>
+                    <th class="border-y border-[#1F6336]/10 bg-[#F0F3EF] p-4 text-right">
+                        <p class="text-xs font-semibold uppercase leading-none text-gray-600">Actions</p>
                     </th>
                 </tr>
             </thead>
@@ -113,10 +116,13 @@
                                 {{ $status }}
                             </span>
                         </td>
+                        <td class="border-b border-[#1F6336]/10 p-4 text-right">
+                            <x-shared.user-actions-kebab-menu :user="$user" />
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="p-6 text-center text-sm text-gray-500">No users found for the selected filters.</td>
+                        <td colspan="6" class="p-6 text-center text-sm text-gray-500">No users found for the selected filters.</td>
                     </tr>
                 @endforelse
             </tbody>

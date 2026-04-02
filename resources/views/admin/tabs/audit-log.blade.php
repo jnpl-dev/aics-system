@@ -7,7 +7,7 @@
 
 <div class="relative flex w-full flex-col rounded-xl border border-[#1F6336]/15 bg-white bg-clip-border text-gray-700 shadow-md">
     <div class="relative mx-4 mt-4 overflow-hidden rounded-none bg-white bg-clip-border text-gray-700">
-        <div class="mb-8 flex items-center justify-between gap-8">
+    <div class="mb-4 flex items-center justify-between gap-8">
             <div>
                 <h5 class="block text-xl font-semibold leading-snug tracking-normal text-[#1F6336]">Audit logs</h5>
                 <p class="mt-1 block text-sm font-normal leading-relaxed text-gray-600">
@@ -29,8 +29,8 @@
         </div>
     </div>
 
-    <div class="max-h-[34rem] overflow-auto px-6 pb-0">
-        <table class="mt-4 w-full min-w-max table-auto text-left">
+    <div class="max-h-[24rem] overflow-auto px-6 pb-0">
+        <table class="mt-2 w-full min-w-max table-auto text-left">
             <thead class="sticky top-0 z-10">
                 <tr>
                     <th class="border-y border-[#1F6336]/10 bg-[#F0F3EF] p-4">

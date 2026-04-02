@@ -834,6 +834,20 @@ function initDashboardFlow() {
                 : action;
         };
 
+        let activeTab = "dashboard";
+
+        const syncActiveTabCache = (tabKey, html) => {
+            const tab = normalizeTab(tabKey);
+            memoryCache = {
+                ...memoryCache,
+                [tab]: {
+                    html,
+                    title: getTitleFromTab(tab),
+                },
+            };
+            writeStorage(memoryCache);
+        };
+
         const loadContentUrl = async (url) => {
             const liveSearchState = captureLiveSearchState();
             setLoading(true);
@@ -860,9 +874,11 @@ function initDashboardFlow() {
                     );
                 }
 
-                contentEl.innerHTML = await response.text();
+                const html = await response.text();
+                contentEl.innerHTML = html;
                 emitDashboardFragmentUpdated();
                 restoreLiveSearchState(liveSearchState);
+                syncActiveTabCache(activeTab, html);
             } catch (error) {
                 contentEl.innerHTML =
                     '<div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">Failed to load this section. Please try again.</div>';
@@ -1068,6 +1084,9 @@ function initDashboardFlow() {
             const tab = normalizeTab(requestedTab);
             const shouldPushState = options.pushState !== false;
 
+            activeTab = tab;
+            contentEl.dataset.activeTab = tab;
+
             setActiveTabVisuals(tab);
 
             if (memoryCache[tab]?.html) {
@@ -1123,11 +1142,7 @@ function initDashboardFlow() {
                     pageTitleEl.textContent = title;
                 }
 
-                memoryCache = {
-                    ...memoryCache,
-                    [tab]: { html, title },
-                };
-                writeStorage(memoryCache);
+                syncActiveTabCache(tab, html);
 
                 if (shouldPushState) {
                     const nextUrl = `${dashboardBaseUrl}?tab=${encodeURIComponent(tab)}`;

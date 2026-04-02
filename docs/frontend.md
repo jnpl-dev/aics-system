@@ -70,6 +70,7 @@ The admin dashboard now uses a **single-page shell** pattern:
 - Cache key: `aics_dashboard_tab_cache_v1` (stored in `sessionStorage`)
 - First time tab visit: fetch from backend endpoint
 - Subsequent visits in the same browser session: load from cache
+- In-tab fragment loads (search/filter/pagination/form-driven refreshes) update the active tab cache entry so revisiting a tab reflects the latest fetched fragment state.
 - Logout clears both auth token and dashboard tab cache
 
 ### Prompting note for future work
