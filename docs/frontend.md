@@ -24,7 +24,7 @@
 - Filament is now installed and an admin panel is available at `/admin`.
 - Existing production dashboard runtime remains the custom Blade + JS tab-fragment flow at `/dashboard`.
 - Current rollout strategy is incremental: move admin features to Filament resource-by-resource while keeping the existing dashboard operational during transition.
-- First migrated slice is `UserResource` under `/admin/users` (list/create/edit).
+- First migrated slices are `UserResource` (`/admin/users`) and `AuditLogResource` (`/admin/audit-logs`).
 - Login/OTP migration is complete:
     - `/login` is the canonical Filament login route.
     - `/otp` is a dedicated Filament OTP challenge page (separate from the credentials form).
@@ -105,6 +105,21 @@ For all large data tables (audit logs, activity feeds, user lists, reports):
 
 Reason: this keeps the dashboard layout stable, reduces DOM load, and avoids whole-page scroll fatigue under heavy datasets.
 
+### Filament admin table viewport behavior (Current)
+
+For Filament admin list pages:
+
+- `/admin/users`
+- `/admin/audit-logs`
+
+the table viewport is intentionally constrained to ~8 visible rows (`height: 24rem`) with internal vertical/horizontal scrolling.
+
+Implementation note:
+
+- The viewport lock is applied in `resources/views/vendor/filament-tables/index.blade.php`.
+- Scope detection is based on Livewire page component class (`ListUsers`, `ListAuditLogs`) rather than route name.
+- This ensures the viewport remains stable across Livewire pagination/filter/sort updates (not only on first load or hard refresh).
+
 ---
 
 ## Installation
@@ -178,7 +193,6 @@ resources/
 │       │   ├── category-management.blade.php
 │       │   ├── requirement-management.blade.php
 │       │   ├── code-reference-management.blade.php
-│       │   ├── audit-log-viewer.blade.php
 │       │   └── sms-settings.blade.php
 │       ├── reports/
 │       │   ├── application-report.blade.php
@@ -218,7 +232,6 @@ app/
     │   ├── CategoryManagement.php
     │   ├── RequirementManagement.php
     │   ├── CodeReferenceManagement.php
-    │   ├── AuditLogViewer.php
     │   └── SmsSettings.php
     ├── Reports/
     │   ├── ApplicationReport.php
@@ -339,7 +352,8 @@ Legacy dashboard user-management Blade components have been retired from runtime
 Current frontend direction:
 
 - Use Filament actions/forms/components for admin pages.
-- Legacy dashboard compatibility surface now covers `dashboard` and `audit-log` only.
+- Legacy dashboard compatibility surface now covers `dashboard` only.
+- Audit Log management/viewing is now Filament-first at `/admin/audit-logs`.
 - Legacy `x-shared.*` user-management components have been removed; do not reintroduce them.
 
 ```bash

@@ -271,7 +271,7 @@ class SupabaseAuthIntegrationTest extends TestCase
             ->assertJsonPath('cooldown_active', true);
     }
 
-    public function test_audit_log_tab_renders_authentication_records(): void
+    public function test_legacy_audit_log_tab_endpoint_is_retired(): void
     {
         DB::table('user')->insert([
             'first_name' => 'Admin',
@@ -308,11 +308,7 @@ class SupabaseAuthIntegrationTest extends TestCase
             'Authorization' => 'Bearer admin-token',
         ])->get('/dashboard/content/audit-log');
 
-        $response
-            ->assertStatus(200)
-            ->assertSee('Audit logs')
-            ->assertSee('authentication')
-            ->assertSee('AUTH_LOGIN_FAILED');
+        $response->assertStatus(404);
     }
 
     public function test_legacy_user_management_tab_endpoint_is_retired(): void

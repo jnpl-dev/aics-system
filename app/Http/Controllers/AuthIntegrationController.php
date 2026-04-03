@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -47,10 +46,6 @@ class AuthIntegrationController extends Controller
         'dashboard' => [
             'title' => 'Dashboard',
             'view' => 'admin.tabs.dashboard',
-        ],
-        'audit-log' => [
-            'title' => 'Audit Log',
-            'view' => 'admin.tabs.audit-log',
         ],
     ];
 
@@ -424,16 +419,6 @@ class AuthIntegrationController extends Controller
      */
     private function tabData(string $tab, ?Request $request = null): array
     {
-        $activeRequest = $request ?? request();
-
-        if ($tab === 'audit-log') {
-            return [
-                'auditLogs' => AuditLog::query()
-                    ->orderByDesc('timestamp')
-                    ->paginate(20, ['*'], 'audit_page', (int) $activeRequest->query('audit_page', 1)),
-            ];
-        }
-
         return [];
     }
 

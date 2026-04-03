@@ -118,6 +118,12 @@
     $hasReorderableColumns = $hasReorderableColumns();
     $hasToggleableColumns = $hasToggleableColumns();
     $columnManagerApplyAction = $getColumnManagerApplyAction();
+    $hasScrollableAdminTableViewport =
+        ($this instanceof \App\Filament\Resources\Users\Pages\ListUsers) ||
+        ($this instanceof \App\Filament\Resources\AuditLogs\Pages\ListAuditLogs);
+    $scrollableAdminTableViewportStyle = $hasScrollableAdminTableViewport
+        ? 'height: 24rem; overflow-y: auto; overflow-x: auto;'
+        : null;
     $columnManagerTriggerAction = $getColumnManagerTriggerAction();
     $hasHeader = $header || $heading || $description || ($headerActions && (! $isReordering)) || $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFilters || count($filterIndicators) || $hasColumnManager;
     $hasHeaderToolbar = $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFiltersTrigger || $hasColumnManager;
@@ -976,6 +982,9 @@
                                     x-sortable
                                     data-sortable-animation-duration="{{ $getReorderAnimationDuration() }}"
                                 @endif
+                                @if ($scrollableAdminTableViewportStyle)
+                                    style="{{ $scrollableAdminTableViewportStyle }}"
+                                @endif
                                 {{
                                     (new ComponentAttributeBag)
                                         ->when($contentGrid, fn (ComponentAttributeBag $attributes) => $attributes->grid($contentGrid))
@@ -1353,12 +1362,17 @@
                             ) : [];
                         @endphp
 
-                        <table
-                            @class([
-                                'fi-ta-table',
-                                'fi-ta-table-stacked-on-mobile' => $isStackedOnMobile,
-                            ])
+                        <div
+                            @if ($scrollableAdminTableViewportStyle)
+                                style="{{ $scrollableAdminTableViewportStyle }}"
+                            @endif
                         >
+                            <table
+                                @class([
+                                    'fi-ta-table',
+                                    'fi-ta-table-stacked-on-mobile' => $isStackedOnMobile,
+                                ])
+                            >
                             <thead>
                                 @if ($isStackedOnMobile && (count($sortableColumns) || ($isSelectionEnabled && ($maxSelectableRecords !== 1) && (! $selectsGroupsOnly))) && (! $isReordering))
                                     <tr class="fi-ta-table-stacked-header-row">
@@ -2407,7 +2421,8 @@
                                     </tr>
                                 </tfoot>
                             @endif
-                        </table>
+                            </table>
+                        </div>
                     @elseif ($records === null)
                         <div class="fi-ta-table-loading-ctn">
                             {{ \Filament\Support\generate_loading_indicator_html(size: \Filament\Support\Enums\IconSize::TwoExtraLarge) }}

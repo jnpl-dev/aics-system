@@ -4,7 +4,7 @@ const TOKEN_KEY = "aics_supabase_access_token";
 const OTP_SESSION_KEY = "aics_otp_session_id";
 const LEGACY_DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v1";
 const DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v2";
-const DASHBOARD_ALLOWED_TABS = new Set(["dashboard", "audit-log"]);
+const DASHBOARD_ALLOWED_TABS = new Set(["dashboard"]);
 
 const appConfig = window.__AICS_SUPABASE__ ?? null;
 
@@ -925,7 +925,6 @@ function initDashboardFlow() {
         const getTitleFromTab = (tab) => {
             const map = {
                 dashboard: "Dashboard",
-                "audit-log": "Audit Log",
             };
 
             return map[tab] ?? "Dashboard";
@@ -1074,9 +1073,7 @@ function initDashboardFlow() {
         contentEl.addEventListener("click", (event) => {
             const target =
                 event.target instanceof Element
-                    ? event.target.closest(
-                          "a[data-dashboard-pagination], a[data-audit-pagination]",
-                      )
+                    ? event.target.closest("a[data-dashboard-pagination]")
                     : null;
 
             if (!(target instanceof HTMLAnchorElement)) {

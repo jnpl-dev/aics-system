@@ -32,6 +32,25 @@ class AuditLogsTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('event_code')
+                    ->label('Event')
+                    ->state(static function ($record): string {
+                        $description = is_string($record->description ?? null)
+                            ? $record->description
+                            : '';
+
+                        if (! str_contains($description, 'event=')) {
+                            return '-';
+                        }
+
+                        $afterEvent = explode('event=', $description, 2)[1] ?? '';
+                        $eventCode = trim(explode(';', $afterEvent, 2)[0]);
+
+                        return $eventCode !== '' ? $eventCode : '-';
+                    })
+                    ->badge()
+                    ->toggleable(),
+
                 TextColumn::make('description')
                     ->label('Description')
                     ->limit(80)
@@ -49,15 +68,12 @@ class AuditLogsTable
             ->filters([
                 SelectFilter::make('action')
                     ->options([
-                        'AUTH_LOGIN_SUCCESS' => 'Auth Login Success',
-                        'AUTH_LOGIN_FAILED' => 'Auth Login Failed',
-                        'AUTH_LOGOUT' => 'Auth Logout',
-                        'AUTH_SESSION_EXPIRED' => 'Auth Session Expired',
-                        'OTP_GENERATED_SENT' => 'OTP Generated Sent',
-                        'OTP_RESEND' => 'OTP Resend',
-                        'OTP_VERIFIED' => 'OTP Verified',
-                        'OTP_FAILED' => 'OTP Failed',
-                        'OTP_EXPIRED' => 'OTP Expired',
+                        'create' => 'Create',
+                        'update' => 'Update',
+                        'delete' => 'Delete',
+                        'login' => 'Login',
+                        'logout' => 'Logout',
+                        'configure' => 'Configure',
                     ]),
             ])
             ->defaultSort('timestamp', 'desc')

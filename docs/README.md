@@ -149,7 +149,7 @@ OTP behavior note:
 Audit note for auth tracking:
 
 - Login-related auth attempts (OTP request, OTP verify outcomes, and logout) are persisted to `audit_log`.
-- The admin **Audit Log** dashboard tab now displays these authentication records.
+- Admin audit records are reviewed from the Filament **Audit Logs** page at `/admin/audit-logs`.
 
 Current audit event taxonomy:
 
