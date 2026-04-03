@@ -35,4 +35,26 @@ class UserModelMappingTest extends TestCase
         $this->assertSame($hashedPassword, $model->password);
         $this->assertTrue(Hash::check('already-hashed-secret', $model->password));
     }
+
+    public function test_user_model_resolves_filament_name_from_full_name(): void
+    {
+        $model = new User([
+            'first_name' => 'Juan',
+            'last_name' => 'Dela Cruz',
+            'email' => 'juan@example.test',
+        ]);
+
+        $this->assertSame('Juan Dela Cruz', $model->getFilamentName());
+    }
+
+    public function test_user_model_resolves_filament_name_from_email_when_name_is_missing(): void
+    {
+        $model = new User([
+            'first_name' => null,
+            'last_name' => null,
+            'email' => 'fallback@example.test',
+        ]);
+
+        $this->assertSame('fallback@example.test', $model->getFilamentName());
+    }
 }

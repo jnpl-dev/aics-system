@@ -1,13 +1,25 @@
 <?php
 
 use App\Http\Controllers\AuthIntegrationController;
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Auth\OtpChallenge;
+use Filament\Http\Middleware\SetUpPanel;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/login', [AuthIntegrationController::class, 'showLogin'])->name('login');
+Route::middleware('guest')->get('/login', Login::class)
+    ->middleware(SetUpPanel::class . ':admin')
+    ->name('login');
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('/otp', OtpChallenge::class)
+        ->middleware(SetUpPanel::class . ':admin')
+        ->name('filament.auth.otp');
+});
+
 Route::get('/dashboard', [AuthIntegrationController::class, 'dashboard'])->name('dashboard');
 Route::post('/auth/login-attempt', [AuthIntegrationController::class, 'logLoginAttempt'])->name('auth.login-attempt');
 Route::post('/auth/login-cooldown-check', [AuthIntegrationController::class, 'checkLoginCooldown'])->name('auth.login-cooldown-check');

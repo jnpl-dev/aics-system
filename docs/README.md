@@ -110,28 +110,36 @@ Example route protection:
 - `Route::middleware(['supabase.auth', 'role:admin'])->group(...)`
 - `Route::middleware(['supabase.auth', 'role:aics_staff,mswd_officer'])->group(...)`
 
-Current implemented flow:
+Current implemented auth flows:
 
-1. User opens `/login` and signs in using Supabase email/password.
-2. Browser stores access token in local storage key `aics_supabase_access_token`.
-3. Browser requests a 6-digit OTP from `/auth/otp/request` using the bearer token.
-4. User submits OTP code to `/auth/otp/verify`.
-5. Browser calls backend `/auth/session` with `Authorization: Bearer <token>`.
-6. Backend validates token with Supabase `/auth/v1/user`, maps email to local `user` table, and enforces OTP completion.
-7. Protected pages use middleware:
-    - `supabase.auth` for token + account validation
-    - `role:*` for role-specific route guards
+### Filament staff login flow (canonical)
+
+1. User opens `/login` (Filament login page).
+2. User submits email/password credentials.
+3. System creates OTP challenge and redirects immediately to `/otp`.
+4. OTP page sends/handles 6-digit email OTP verification (including resend and retry guards).
+5. On successful verification, Filament session is completed and user is redirected to panel/dashboard target.
+6. Logout returns users to `/login`.
+
+### Supabase-backed API/session flow (retained)
+
+This flow is retained for existing dashboard/session integrations protected by `supabase.auth` middleware.
+
+1. Client calls protected endpoints with `Authorization: Bearer <token>`.
+2. Backend validates token with Supabase `/auth/v1/user`.
+3. Backend maps email to local `user` table and enforces account/role requirements.
 
 Useful endpoints for testing:
 
 - `/login` (public)
-- `/auth/otp/request` (requires bearer token; sends 6-digit OTP to email)
-- `/auth/otp/verify` (requires bearer token; verifies OTP and unlocks protected routes)
+- `/otp` (public guest route; Filament OTP challenge page)
+- `/auth/otp/request` (requires bearer token; Supabase-backed API OTP request endpoint)
+- `/auth/otp/verify` (requires bearer token; Supabase-backed API OTP verify endpoint)
 - `/auth/session` (requires bearer token)
 - `/dashboard` (public dashboard shell page; dynamic tabs swap content in-place)
 - `/dashboard/content/{tab}` (protected HTML fragment endpoint for dashboard tab content)
 - `/admin/ping` (requires bearer token + admin role)
-- `/auth/logout` (client-side token clear handoff)
+- `/auth/logout` (client-side token clear handoff for Supabase-backed flows)
 
 OTP behavior note:
 

@@ -82,14 +82,6 @@ class AuthIntegrationController extends Controller
         ],
     ];
 
-    public function showLogin(): View
-    {
-        return view('auth.login', [
-            'supabaseUrl' => config('supabase.url'),
-            'supabaseAnonKey' => config('supabase.anon_key'),
-        ]);
-    }
-
     public function session(Request $request): JsonResponse
     {
         $user = $request->user();

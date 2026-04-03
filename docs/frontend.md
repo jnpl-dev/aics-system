@@ -19,6 +19,21 @@
 
 > Note: sections below that discuss Livewire/Alpine patterns are retained as legacy reference for possible future migration, but they are **not** the active runtime standard.
 
+## Filament Migration Status (Current)
+
+- Filament is now installed and an admin panel is available at `/admin`.
+- Existing production dashboard runtime remains the custom Blade + JS tab-fragment flow at `/dashboard`.
+- Current rollout strategy is incremental: move admin features to Filament resource-by-resource while keeping the existing dashboard operational during transition.
+- First migrated slice is `UserResource` under `/admin/users` (list/create/edit).
+- Login/OTP migration is complete:
+    - `/login` is the canonical Filament login route.
+    - `/otp` is a dedicated Filament OTP challenge page (separate from the credentials form).
+    - Logout now redirects back to `/login`.
+    - Legacy transitional login/OTP Blade files and controller stubs were removed from active runtime.
+- Filament login uses a two-step flow (credentials + email OTP confirmation) before completing session sign-in.
+- OTP UX specifics: six separate digit boxes, loading spinner on Verify, controls disabled until code is sent, and Filament toast notifications for send/resend/verify states.
+- Filament panel access now allows all users with `status = active` (no longer admin-only).
+
 ## Design Tokens (Mandatory for New UI)
 
 Use this palette and font pairing for all new screens and UI updates:
