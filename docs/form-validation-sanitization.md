@@ -1,29 +1,25 @@
 # Form Validation and Sanitization
 
-This document tracks the current lightweight frontend validation/sanitization behavior for the Add User modal.
+This document tracks the current validation and sanitization behavior for user-management forms.
 
 Current approach:
 
-- Frontend performs basic sanitization and validation for better UX.
-- Backend remains the source of truth using Laravel validation rules in `AuthIntegrationController::storeUser`.
+- Filament form schemas and page handlers are used for user-management input handling.
+- Backend remains the source of truth via Filament + Laravel validation rules.
 
-## Frontend module
+## Runtime status
 
-- `resources/js/forms/validation-sanitization.js`
+- Legacy Add User frontend script `resources/js/forms/validation-sanitization.js` has been removed.
+- Legacy dashboard Add User modal flow was retired with the user-management Filament migration.
 
 ## What it currently handles
 
-- Name sanitization (letters/spaces/apostrophe/hyphen + trim)
-- Email sanitization (trim/lowercase/remove spaces)
-- Password trim sanitization
-- Basic Add User checks:
-    - first name min length
-    - last name min length
-    - email format
-    - password min length (6)
-    - required role
-- Show/hide password toggle for Add User modal
+- Server-side sanitization in `CreateUser::mutateFormDataBeforeCreate()`:
+    - name cleanup (letters/spaces/apostrophe/hyphen + trim)
+    - lowercase/trim email normalization
+- Filament form rules for user creation/edit actions (required fields, password rules, confirmation checks).
+- Supabase provisioning/reconciliation checks in `CreateUser` with fallback behavior based on configuration.
 
 ## Important note
 
-Laravel backend validation (including `Password` rule) is still mandatory and authoritative.
+Validation and sanitization are enforced server-side and remain authoritative.

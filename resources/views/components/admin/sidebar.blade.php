@@ -17,34 +17,10 @@
             'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />',
         ],
         [
-            'key' => 'user-management',
-            'label' => 'User Management',
-            'roles' => ['admin'],
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2m12 0H7m10-9a3 3 0 11-6 0 3 3 0 016 0m-8 0a3 3 0 11-6 0 3 3 0 016 0" />',
-        ],
-        [
             'key' => 'audit-log',
             'label' => 'Audit Log',
             'roles' => ['admin'],
             'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-6m3 6v-4m3 8H6a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2z" />',
-        ],
-        [
-            'key' => 'system-activity',
-            'label' => 'System Activity',
-            'roles' => ['admin'],
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h4l3 8 4-16 3 8h4" />',
-        ],
-        [
-            'key' => 'sms-settings',
-            'label' => 'SMS Settings',
-            'roles' => ['admin'],
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-2l-4 4z" />',
-        ],
-        [
-            'key' => 'system-settings',
-            'label' => 'System Settings',
-            'roles' => ['admin'],
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317a1 1 0 011.35-.936l1.028.448a1 1 0 00.95-.05l.971-.564a1 1 0 011.486.928l-.09 1.118a1 1 0 00.292.792l.79.79a1 1 0 01-.083 1.497l-.86.688a1 1 0 00-.37.878l.12 1.094a1 1 0 01-1.239 1.1l-1.09-.273a1 1 0 00-.89.2l-.838.756a1 1 0 01-1.54-.457l-.398-1.05a1 1 0 00-.71-.623l-1.08-.248a1 1 0 01-.5-1.41l.57-.965a1 1 0 00.05-.95l-.45-1.03a1 1 0 01.94-1.35h1.11a1 1 0 00.79-.29l.79-.79z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />',
         ],
     ];
 
@@ -92,13 +68,6 @@
         </summary>
 
         <div class="px-3 pb-3 space-y-2">
-            <a
-                href="{{ route('dashboard', ['tab' => 'account-settings']) }}"
-                data-dashboard-tab="account-settings"
-                class="flex items-center rounded-md px-3 py-2 text-sm text-[#F0F3EF]/85 hover:bg-[#145024] hover:text-[#F0F3EF] transition"
-            >
-                Account Settings
-            </a>
             <button id="logout-btn" type="button" class="flex w-full items-center rounded-md px-3 py-2 text-sm text-[#F0F3EF]/85 hover:bg-[#145024] hover:text-[#F0F3EF] transition">
                 Logout
             </button>

@@ -174,8 +174,7 @@ resources/
 │       ├── treasury/
 │       │   ├── voucher-queue.blade.php
 │       │   └── cheque-form.blade.php
-│       ├── admin/
-│       │   ├── user-management.blade.php
+│       ├── admin/                     ← legacy examples (user-management moved to Filament resources)
 │       │   ├── category-management.blade.php
 │       │   ├── requirement-management.blade.php
 │       │   ├── code-reference-management.blade.php
@@ -216,7 +215,6 @@ app/
     │   ├── VoucherQueue.php
     │   └── ChequeForm.php
     ├── Admin/
-    │   ├── UserManagement.php
     │   ├── CategoryManagement.php
     │   ├── RequirementManagement.php
     │   ├── CodeReferenceManagement.php
@@ -334,43 +332,15 @@ Add `wire:navigate` to all internal links to get instant SPA-like page transitio
 
 Never repeat UI markup. Extract repeating elements into Blade components or Livewire components.
 
-### Shared button component standard
+### Legacy shared Blade components (status)
 
-Use `resources/views/components/shared/button.blade.php` for all button actions.
+Legacy dashboard user-management Blade components have been retired from runtime.
 
-Supported variants:
+Current frontend direction:
 
-- `primary`
-- `secondary`
-- `tertiary`
-
-Supported props:
-
-- `variant` (default: `primary`)
-- `type` (default: `button`)
-- `fullWidth` (default: `false`)
-- `loadingText` (optional; shown while button is in loading state)
-
-Loading behavior contract:
-
-- The component includes a built-in spinner (`data-btn-spinner`)
-- The component wraps visible label text in `data-btn-label`
-- Client logic can toggle loading by setting `data-loading` + `aria-busy`
-- If `loadingText` is provided, label swaps to that text while loading
-
-Example:
-
-```blade
-<x-shared.button
-    id="save-settings-btn"
-    type="button"
-    variant="primary"
-    loading-text="Saving..."
-    :full-width="true"
->
-    Save Settings
-</x-shared.button>
-```
+- Use Filament actions/forms/components for admin pages.
+- Legacy dashboard compatibility surface now covers `dashboard` and `audit-log` only.
+- Legacy `x-shared.*` user-management components have been removed; do not reintroduce them.
 
 ```bash
 # Create a new Livewire component

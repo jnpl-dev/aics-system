@@ -5,17 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Throwable;
 
@@ -45,8 +39,6 @@ class AuthIntegrationController extends Controller
 
     private const EVENT_OTP_EXPIRED = 'OTP_EXPIRED';
 
-    private const EVENT_USER_CREATED = 'USER_CREATED';
-
     private const LOGIN_FAILED_MAX_ATTEMPTS = 5;
 
     private const LOGIN_FAILED_COOLDOWN_MINUTES = 15;
@@ -56,29 +48,9 @@ class AuthIntegrationController extends Controller
             'title' => 'Dashboard',
             'view' => 'admin.tabs.dashboard',
         ],
-        'user-management' => [
-            'title' => 'User Management',
-            'view' => 'admin.tabs.user-management',
-        ],
         'audit-log' => [
             'title' => 'Audit Log',
             'view' => 'admin.tabs.audit-log',
-        ],
-        'system-activity' => [
-            'title' => 'System Activity',
-            'view' => 'admin.tabs.system-activity',
-        ],
-        'sms-settings' => [
-            'title' => 'SMS Settings',
-            'view' => 'admin.tabs.sms-settings',
-        ],
-        'system-settings' => [
-            'title' => 'System Settings',
-            'view' => 'admin.tabs.system-settings',
-        ],
-        'account-settings' => [
-            'title' => 'Account Settings',
-            'view' => 'admin.tabs.account-settings',
         ],
     ];
 
@@ -419,118 +391,6 @@ class AuthIntegrationController extends Controller
         ]);
     }
 
-    public function storeUser(Request $request): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'min:2', 'max:60'],
-            'last_name' => ['required', 'string', 'min:2', 'max:60'],
-            'email' => ['required', 'string', 'email', 'max:120', Rule::unique('user', 'email')],
-            'password' => [
-                'required',
-                'string',
-                Password::min(6)
-                    ->mixedCase()
-                    ->letters()
-                    ->numbers()
-                    ->symbols(),
-            ],
-            'role' => [
-                'required',
-                'string',
-                Rule::in([
-                    'admin',
-                    'aics_staff',
-                    'mswd_officer',
-                    'mayor_office_staff',
-                    'accountant',
-                    'treasurer',
-                ]),
-            ],
-        ]);
-
-        $sanitizeName = static fn (string $value): string => trim((string) preg_replace('/\s+/', ' ', preg_replace('/[^\pL\s\'\-]/u', '', $value) ?? ''));
-        $normalizedEmail = strtolower(trim((string) $validated['email']));
-
-        $supabaseProvisionResult = $this->provisionSupabaseUser(
-            $normalizedEmail,
-            (string) $validated['password']
-        );
-
-        if (($supabaseProvisionResult['ok'] ?? false) !== true) {
-            return $this->userCreationFailedResponse(
-                $request,
-                (string) ($supabaseProvisionResult['message'] ?? 'Unable to provision Supabase credentials.'),
-                [
-                    'email' => [
-                        (string) ($supabaseProvisionResult['message'] ?? 'Unable to create login credentials for this email.'),
-                    ],
-                ]
-            );
-        }
-
-        $supabaseUserId = (string) ($supabaseProvisionResult['user_id'] ?? '');
-
-        try {
-            $createdUser = DB::transaction(function () use ($validated, $sanitizeName, $normalizedEmail): User {
-                /** @var User $user */
-                $user = User::query()->create([
-                    'first_name' => $sanitizeName((string) $validated['first_name']),
-                    'last_name' => $sanitizeName((string) $validated['last_name']),
-                    'email' => $normalizedEmail,
-                    'password' => (string) $validated['password'],
-                    'role' => (string) $validated['role'],
-                    'status' => 'active',
-                ]);
-
-                return $user;
-            });
-        } catch (Throwable) {
-            if ($supabaseUserId !== '') {
-                $this->deleteSupabaseUser($supabaseUserId);
-            }
-
-            return $this->userCreationFailedResponse(
-                $request,
-                'Unable to save the user account in the local database.',
-                [
-                    'email' => ['Unable to save user account. Please try again.'],
-                ]
-            );
-        }
-
-        $actor = $request->user();
-        $this->recordAuditEvent(
-            $request,
-            self::EVENT_USER_CREATED,
-            is_int($actor?->user_id) ? $actor->user_id : 0,
-            is_string($actor?->email) ? $actor->email : null,
-            [
-                'operation' => 'user_created',
-                'created_user_id' => $createdUser->user_id,
-                'created_user_email' => $createdUser->email,
-                'supabase_user_id' => $supabaseUserId,
-            ]
-        );
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'message' => 'User account created successfully.',
-                'user' => [
-                    'user_id' => $createdUser->user_id,
-                    'email' => $createdUser->email,
-                    'first_name' => $createdUser->first_name,
-                    'last_name' => $createdUser->last_name,
-                    'role' => $createdUser->role,
-                    'status' => $createdUser->status,
-                ],
-            ], Response::HTTP_CREATED);
-        }
-
-        return redirect()
-            ->route('dashboard', ['tab' => 'user-management'])
-            ->with('status', 'User account created successfully.');
-    }
-
     public function adminPing(Request $request): JsonResponse
     {
         return response()->json([
@@ -571,40 +431,6 @@ class AuthIntegrationController extends Controller
                 'auditLogs' => AuditLog::query()
                     ->orderByDesc('timestamp')
                     ->paginate(20, ['*'], 'audit_page', (int) $activeRequest->query('audit_page', 1)),
-            ];
-        }
-
-        if ($tab === 'user-management') {
-            $search = trim((string) $activeRequest->query('user_search', ''));
-            $role = trim((string) $activeRequest->query('user_role', ''));
-            $status = trim((string) $activeRequest->query('user_status', ''));
-
-            return [
-                'users' => User::query()
-                    ->when($search !== '', function ($query) use ($search): void {
-                        $query->where(function ($innerQuery) use ($search): void {
-                            $innerQuery
-                                ->where('first_name', 'like', "%{$search}%")
-                                ->orWhere('last_name', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%");
-                        });
-                    })
-                    ->when($role !== '', function ($query) use ($role): void {
-                        if ($role === 'admin') {
-                            $query->whereIn('role', ['admin', 'system_admin']);
-                            return;
-                        }
-
-                        $query->where('role', $role);
-                    })
-                    ->when($status !== '', fn ($query) => $query->where('status', $status))
-                    ->orderByDesc('user_id')
-                    ->paginate(20, ['*'], 'user_page', (int) $activeRequest->query('user_page', 1)),
-                'userManagementFilters' => [
-                    'search' => $search,
-                    'role' => $role,
-                    'status' => $status,
-                ],
             ];
         }
 
@@ -651,7 +477,6 @@ class AuthIntegrationController extends Controller
     private function mapAuditModuleAndAction(string $eventCode): array
     {
         return match ($eventCode) {
-            self::EVENT_USER_CREATED => ['user_management', 'create'],
             self::EVENT_AUTH_LOGOUT => ['authentication', 'logout'],
             self::EVENT_OTP_GENERATED_SENT,
             self::EVENT_OTP_RESEND,
@@ -665,105 +490,6 @@ class AuthIntegrationController extends Controller
     private function normalizeRole(string $role): string
     {
         return $role === 'system_admin' ? 'admin' : $role;
-    }
-
-    /**
-     * @return array{ok:bool,message:string,user_id?:string}
-     */
-    private function provisionSupabaseUser(string $email, string $password): array
-    {
-        $supabaseUrl = rtrim((string) config('supabase.url', ''), '/');
-        $serviceRoleKey = (string) config('supabase.service_role_key', '');
-
-        if ($supabaseUrl === '' || $serviceRoleKey === '') {
-            return [
-                'ok' => false,
-                'message' => 'Supabase admin provisioning is not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.',
-            ];
-        }
-
-        try {
-            $response = Http::timeout(10)
-                ->withHeaders([
-                    'apikey' => $serviceRoleKey,
-                    'Authorization' => 'Bearer '.$serviceRoleKey,
-                ])
-                ->acceptJson()
-                ->post($supabaseUrl.'/auth/v1/admin/users', [
-                    'email' => $email,
-                    'password' => $password,
-                    'email_confirm' => true,
-                ]);
-        } catch (Throwable) {
-            return [
-                'ok' => false,
-                'message' => 'Unable to reach Supabase Auth. Please try again in a moment.',
-            ];
-        }
-
-        $payload = $response->json();
-
-        if (!$response->successful()) {
-            $message = is_array($payload)
-                ? (string) ($payload['msg'] ?? $payload['message'] ?? $payload['error_description'] ?? $payload['error'] ?? 'Failed to create Supabase user.')
-                : 'Failed to create Supabase user.';
-
-            if (str_contains(strtolower($message), 'already')) {
-                $message = 'Email already exists in Supabase Auth. Use a different email or reset that account password.';
-            }
-
-            return [
-                'ok' => false,
-                'message' => $message,
-            ];
-        }
-
-        $userId = '';
-        if (is_array($payload)) {
-            $userId = (string) ($payload['id'] ?? $payload['user']['id'] ?? '');
-        }
-
-        return [
-            'ok' => true,
-            'message' => 'Supabase user created.',
-            'user_id' => $userId,
-        ];
-    }
-
-    private function deleteSupabaseUser(string $userId): void
-    {
-        $supabaseUrl = rtrim((string) config('supabase.url', ''), '/');
-        $serviceRoleKey = (string) config('supabase.service_role_key', '');
-
-        if ($supabaseUrl === '' || $serviceRoleKey === '' || $userId === '') {
-            return;
-        }
-
-        Http::timeout(10)
-            ->withHeaders([
-                'apikey' => $serviceRoleKey,
-                'Authorization' => 'Bearer '.$serviceRoleKey,
-            ])
-            ->acceptJson()
-            ->delete($supabaseUrl.'/auth/v1/admin/users/'.$userId);
-    }
-
-    /**
-     * @param array<string, array<int, string>> $errors
-     */
-    private function userCreationFailedResponse(Request $request, string $message, array $errors): RedirectResponse|JsonResponse
-    {
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'message' => $message,
-                'errors' => $errors,
-            ], 422);
-        }
-
-        return redirect()
-            ->route('dashboard', ['tab' => 'user-management'])
-            ->withErrors($errors)
-            ->withInput();
     }
 
     private function tokenHash(?string $token): string

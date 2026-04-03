@@ -4,15 +4,7 @@ const TOKEN_KEY = "aics_supabase_access_token";
 const OTP_SESSION_KEY = "aics_otp_session_id";
 const LEGACY_DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v1";
 const DASHBOARD_CACHE_KEY = "aics_dashboard_tab_cache_v2";
-const DASHBOARD_ALLOWED_TABS = new Set([
-    "dashboard",
-    "user-management",
-    "audit-log",
-    "system-activity",
-    "sms-settings",
-    "system-settings",
-    "account-settings",
-]);
+const DASHBOARD_ALLOWED_TABS = new Set(["dashboard", "audit-log"]);
 
 const appConfig = window.__AICS_SUPABASE__ ?? null;
 
@@ -817,7 +809,10 @@ function initDashboardFlow() {
         const buildFragmentUrlFromForm = (form) => {
             const action =
                 form.getAttribute("action") ||
-                endpointTemplate.replace("__TAB__", "user-management");
+                endpointTemplate.replace(
+                    "__TAB__",
+                    encodeURIComponent(activeTab),
+                );
             const formData = new FormData(form);
             const search = new URLSearchParams();
 
@@ -902,125 +897,6 @@ function initDashboardFlow() {
             }
         };
 
-        const clearAddUserFormErrors = (form) => {
-            form.querySelectorAll("[data-error-for]").forEach((node) => {
-                if (!(node instanceof HTMLElement)) {
-                    return;
-                }
-
-                node.textContent = "";
-                node.classList.add("hidden");
-            });
-        };
-
-        const renderAddUserFormErrors = (form, errors = {}) => {
-            clearAddUserFormErrors(form);
-
-            Object.entries(errors).forEach(([field, messages]) => {
-                const errorEl = form.querySelector(
-                    `[data-error-for="${field}"]`,
-                );
-                if (!(errorEl instanceof HTMLElement)) {
-                    return;
-                }
-
-                const message = Array.isArray(messages)
-                    ? String(messages[0] ?? "")
-                    : String(messages ?? "");
-
-                if (message.trim() === "") {
-                    return;
-                }
-
-                errorEl.textContent = message;
-                errorEl.classList.remove("hidden");
-            });
-        };
-
-        const setAddUserFormSubmitting = (form, isSubmitting) => {
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (!(submitButton instanceof HTMLButtonElement)) {
-                return;
-            }
-
-            if (!submitButton.dataset.defaultLabel) {
-                submitButton.dataset.defaultLabel =
-                    submitButton.textContent?.trim() ?? "Save User";
-            }
-
-            submitButton.disabled = isSubmitting;
-            submitButton.textContent = isSubmitting
-                ? "Saving..."
-                : submitButton.dataset.defaultLabel;
-        };
-
-        const submitAddUserForm = async (form) => {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") ?? "";
-
-            clearAddUserFormErrors(form);
-            setAddUserFormSubmitting(form, true);
-
-            try {
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    headers: {
-                        Accept: "application/json",
-                        Authorization: `Bearer ${token}`,
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-TOKEN": csrfToken,
-                    },
-                    body: new FormData(form),
-                });
-
-                if (response.status === 401) {
-                    localStorage.removeItem(TOKEN_KEY);
-                    sessionStorage.removeItem(OTP_SESSION_KEY);
-                    sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
-                    window.location.assign("/login");
-                    return;
-                }
-
-                const payload = await response.json().catch(() => ({}));
-
-                if (response.status === 422) {
-                    renderAddUserFormErrors(form, payload?.errors ?? {});
-                    return;
-                }
-
-                if (!response.ok) {
-                    throw new Error(
-                        String(
-                            payload?.message ??
-                                "Failed to create user account.",
-                        ),
-                    );
-                }
-
-                form.reset();
-                clearAddUserFormErrors(form);
-
-                const modalRoot = form.closest("details");
-                modalRoot?.removeAttribute("open");
-
-                delete memoryCache["user-management"];
-                writeStorage(memoryCache);
-
-                await loadTab("user-management", { pushState: false });
-            } catch (error) {
-                renderAddUserFormErrors(form, {
-                    password: [
-                        error instanceof Error
-                            ? error.message
-                            : "Failed to create user account.",
-                    ],
-                });
-            } finally {
-                setAddUserFormSubmitting(form, false);
-            }
-        };
         const setActiveTabVisuals = (activeTab) => {
             document
                 .querySelectorAll("[data-dashboard-tab]")
@@ -1049,12 +925,7 @@ function initDashboardFlow() {
         const getTitleFromTab = (tab) => {
             const map = {
                 dashboard: "Dashboard",
-                "user-management": "User Management",
                 "audit-log": "Audit Log",
-                "system-activity": "System Activity",
-                "sms-settings": "SMS Settings",
-                "system-settings": "System Settings",
-                "account-settings": "Account Settings",
             };
 
             return map[tab] ?? "Dashboard";
@@ -1219,12 +1090,6 @@ function initDashboardFlow() {
         contentEl.addEventListener("submit", (event) => {
             const target = event.target;
             if (!(target instanceof HTMLFormElement)) {
-                return;
-            }
-
-            if (target.matches("form[data-add-user-form]")) {
-                event.preventDefault();
-                submitAddUserForm(target);
                 return;
             }
 
