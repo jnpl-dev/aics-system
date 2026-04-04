@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AuditLogs\Tables;
 
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -77,6 +78,11 @@ class AuditLogsTable
                     ]),
             ])
             ->defaultSort('timestamp', 'desc')
+            ->persistSearchInSession()
+            ->persistFiltersInSession()
+            ->persistSortInSession()
+            ->searchDebounce('250ms')
+            ->paginationMode(PaginationMode::Simple)
             ->paginated([20, 50, 100])
             ->defaultPaginationPageOption(20);
     }

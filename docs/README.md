@@ -11,6 +11,17 @@ A web-based system for the Assistance to Individuals in Crisis Situation (AICS) 
 - Automate SMS notifications at every key stage
 - Generate reports for management oversight
 
+## Engineering Rule: Performance First
+
+Performance optimization is a continuous requirement for this project, not a one-time task.
+
+All feature work should include:
+
+- efficient query/sort/filter paths,
+- practical caching/state persistence where appropriate,
+- responsive UI behavior under real workloads,
+- and documentation updates when runtime performance behavior changes.
+
 ## Actors
 
 | Actor                | Role                                                |
@@ -60,9 +71,9 @@ ocropper.js fallback
 Design defaults for UI consistency:
 
 - Palette:
-    - `--dark-emerald: #1F6336ff`
-    - `--bright-fern: #3DA814ff`
-    - `--porcelain: #F0F3EFff`
+    - `--dark-emerald: #176334ff`
+    - `--lime-moss: #6C9C02ff`
+    - `--snow: #FFFDFFff`
 - Fonts:
     - `Inter`
     - `Public Sans`

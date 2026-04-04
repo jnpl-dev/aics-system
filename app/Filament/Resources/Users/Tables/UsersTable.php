@@ -13,6 +13,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\QueryException;
@@ -232,6 +233,11 @@ class UsersTable
                 ]),
             ])
             ->defaultSort('last_name')
+        ->persistSearchInSession()
+        ->persistFiltersInSession()
+        ->persistSortInSession()
+            ->searchDebounce('250ms')
+        ->paginationMode(PaginationMode::Simple)
             ->paginated([20, 50, 100])
             ->defaultPaginationPageOption(20);
     }

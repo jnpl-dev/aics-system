@@ -33,6 +33,7 @@
 - Filament login uses a two-step flow (credentials + email OTP confirmation) before completing session sign-in.
 - OTP UX specifics: six separate digit boxes, loading spinner on Verify, controls disabled until code is sent, and Filament toast notifications for send/resend/verify states.
 - Filament panel access now allows all users with `status = active` (no longer admin-only).
+- Auth audit trail in Filament runtime is event-driven for login/logout and OTP flow events are recorded directly from the OTP page component.
 
 ## Design Tokens (Mandatory for New UI)
 
@@ -40,9 +41,9 @@ Use this palette and font pairing for all new screens and UI updates:
 
 ### Color Palette
 
-- `--dark-emerald: #1F6336ff;`
-- `--bright-fern: #3DA814ff;`
-- `--porcelain: #F0F3EFff;`
+- `--dark-emerald: #176334ff;`
+- `--lime-moss: #6C9C02ff;`
+- `--snow: #FFFDFFff;`
 
 ### Font Pairing
 
@@ -53,7 +54,11 @@ Implementation note:
 
 - Body copy should default to **Inter**.
 - Headings should default to **Public Sans**.
-- Primary actions should use **bright-fern** with **dark-emerald** hover/active states.
+- Primary actions should use **lime-moss** with **dark-emerald** hover/active states.
+- Filament global panel aliases map to this palette:
+    - `primary` → `#176334`
+    - `success` → `#6C9C02`
+    - `gray` → `#FFFDFF`
 
 ---
 
@@ -82,7 +87,7 @@ The admin dashboard now uses a **single-page shell** pattern:
 
 ### Caching behavior
 
-- Cache key: `aics_dashboard_tab_cache_v1` (stored in `sessionStorage`)
+- Cache key: `aics_dashboard_tab_cache_v2` (stored in `sessionStorage`)
 - First time tab visit: fetch from backend endpoint
 - Subsequent visits in the same browser session: load from cache
 - In-tab fragment loads (search/filter/pagination/form-driven refreshes) update the active tab cache entry so revisiting a tab reflects the latest fetched fragment state.
@@ -105,6 +110,19 @@ For all large data tables (audit logs, activity feeds, user lists, reports):
 
 Reason: this keeps the dashboard layout stable, reduces DOM load, and avoids whole-page scroll fatigue under heavy datasets.
 
+### Performance optimization policy (Mandatory)
+
+For all new features and refactors, performance is a non-optional acceptance criterion.
+
+Before marking work complete, ensure:
+
+- Query path is indexed for default sort/filter/search columns.
+- Heavy lists use pagination mode appropriate for scale (`Simple` pagination preferred for high-volume admin lists).
+- Request burst controls are configured for live search (`searchDebounce` or `searchOnBlur`).
+- Revisit UX state is persisted when supported (search/filter/sort in session for Filament tables).
+- Navigation avoids full reloads where possible (Filament SPA mode + prefetch for admin panel).
+- Any new performance-sensitive behavior is documented in this guide and logged in `docs/progress.md`.
+
 ### Filament admin table viewport behavior (Current)
 
 For Filament admin list pages:
@@ -119,6 +137,8 @@ Implementation note:
 - The viewport lock is applied in `resources/views/vendor/filament-tables/index.blade.php`.
 - Scope detection is based on Livewire page component class (`ListUsers`, `ListAuditLogs`) rather than route name.
 - This ensures the viewport remains stable across Livewire pagination/filter/sort updates (not only on first load or hard refresh).
+- Filament table state now persists across revisits via session-backed table settings (search/filter/sort).
+- Admin list pages (`/admin/users`, `/admin/audit-logs`) use SPA navigation + prefetch and `Simple` pagination mode for lower query overhead at scale.
 
 ---
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Auth;
 
+use App\Models\AuditLog;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Notifications\Notification;
@@ -10,6 +11,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class OtpChallenge extends SimplePage
 {
@@ -20,6 +22,16 @@ class OtpChallenge extends SimplePage
     private const OTP_CHALLENGE_SESSION_KEY = 'filament_login_otp_challenge_id';
 
     private const LOGIN_ROUTE_NAME = 'login';
+
+    private const EVENT_OTP_GENERATED_SENT = 'OTP_GENERATED_SENT';
+
+    private const EVENT_OTP_RESEND = 'OTP_RESEND';
+
+    private const EVENT_OTP_VERIFIED = 'OTP_VERIFIED';
+
+    private const EVENT_OTP_FAILED = 'OTP_FAILED';
+
+    private const EVENT_OTP_EXPIRED = 'OTP_EXPIRED';
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -83,6 +95,10 @@ class OtpChallenge extends SimplePage
         $challengeId = $this->getChallengeIdFromSession();
 
         if (blank($challengeId)) {
+            $this->recordOtpAuditEvent(self::EVENT_OTP_EXPIRED, 0, null, [
+                'reason' => 'challenge_missing_from_session',
+            ]);
+
             return redirect()->route(self::LOGIN_ROUTE_NAME)->withErrors([
                 'otp_code' => 'OTP session expired. Please sign in again.',
             ]);
@@ -93,14 +109,27 @@ class OtpChallenge extends SimplePage
         if (! is_array($payload)) {
             $this->clearChallenge($challengeId);
 
+            $this->recordOtpAuditEvent(self::EVENT_OTP_EXPIRED, 0, null, [
+                'reason' => 'challenge_payload_missing_or_expired',
+                'otp_session_id' => $challengeId,
+            ]);
+
             return redirect()->route(self::LOGIN_ROUTE_NAME)->withErrors([
                 'otp_code' => 'OTP session expired. Please sign in again.',
             ]);
         }
 
+        $payloadUserId = $this->payloadUserId($payload);
+        $payloadEmail = $this->payloadEmail($payload);
+
         $attempts = (int) ($payload['attempts'] ?? 0);
 
         if (! is_string($payload['code_hash'] ?? null) || blank($payload['code_hash'])) {
+            $this->recordOtpAuditEvent(self::EVENT_OTP_FAILED, $payloadUserId, $payloadEmail, [
+                'reason' => 'otp_not_sent_yet',
+                'otp_session_id' => $challengeId,
+            ]);
+
             $this->addError('otp_code', 'Your verification code is still being sent. Please wait a moment.');
 
             return null;
@@ -108,6 +137,12 @@ class OtpChallenge extends SimplePage
 
         if ($attempts >= self::OTP_MAX_ATTEMPTS) {
             $this->clearChallenge($challengeId);
+
+            $this->recordOtpAuditEvent(self::EVENT_OTP_FAILED, $payloadUserId, $payloadEmail, [
+                'reason' => 'otp_max_attempts_exceeded',
+                'otp_session_id' => $challengeId,
+                'attempts' => $attempts,
+            ]);
 
             return redirect()->route(self::LOGIN_ROUTE_NAME)->withErrors([
                 'otp_code' => 'Maximum OTP attempts exceeded. Please sign in again.',
@@ -122,6 +157,13 @@ class OtpChallenge extends SimplePage
                 $payload,
                 now()->addMinutes(self::OTP_TTL_MINUTES)
             );
+
+            $this->recordOtpAuditEvent(self::EVENT_OTP_FAILED, $payloadUserId, $payloadEmail, [
+                'reason' => 'otp_code_invalid',
+                'otp_session_id' => $challengeId,
+                'attempts' => (int) $payload['attempts'],
+                'attempts_remaining' => max(self::OTP_MAX_ATTEMPTS - (int) $payload['attempts'], 0),
+            ]);
 
             $this->addError('otp_code', 'Invalid OTP code. Please try again.');
 
@@ -153,6 +195,10 @@ class OtpChallenge extends SimplePage
 
         $authGuard->login($user, $remember);
 
+        $this->recordOtpAuditEvent(self::EVENT_OTP_VERIFIED, $payloadUserId, $payloadEmail, [
+            'otp_session_id' => $challengeId,
+        ]);
+
         $this->clearChallenge($challengeId);
 
         session()->regenerate();
@@ -175,6 +221,10 @@ class OtpChallenge extends SimplePage
         $challengeId = $this->getChallengeIdFromSession();
 
         if (blank($challengeId)) {
+            $this->recordOtpAuditEvent(self::EVENT_OTP_EXPIRED, 0, null, [
+                'reason' => 'challenge_missing_from_session_on_resend',
+            ]);
+
             $this->addError('otp_code', 'OTP session expired. Please sign in again.');
 
             return;
@@ -184,14 +234,28 @@ class OtpChallenge extends SimplePage
 
         if (! is_array($payload)) {
             $this->clearChallenge($challengeId);
+
+            $this->recordOtpAuditEvent(self::EVENT_OTP_EXPIRED, 0, null, [
+                'reason' => 'challenge_payload_missing_or_expired_on_resend',
+                'otp_session_id' => $challengeId,
+            ]);
+
             $this->addError('otp_code', 'OTP session expired. Please sign in again.');
 
             return;
         }
 
+        $payloadUserId = $this->payloadUserId($payload);
+        $payloadEmail = $this->payloadEmail($payload);
+
         $code = (string) random_int(100000, 999999);
 
         if (! $this->sendOtpEmail((string) ($payload['email'] ?? ''), $code)) {
+            $this->recordOtpAuditEvent(self::EVENT_OTP_FAILED, $payloadUserId, $payloadEmail, [
+                'reason' => 'mail_delivery_failed_on_resend',
+                'otp_session_id' => $challengeId,
+            ]);
+
             $this->addError('otp_code', 'We could not resend your OTP. Please try again.');
 
             return;
@@ -205,6 +269,10 @@ class OtpChallenge extends SimplePage
             $payload,
             now()->addMinutes(self::OTP_TTL_MINUTES)
         );
+
+        $this->recordOtpAuditEvent(self::EVENT_OTP_RESEND, $payloadUserId, $payloadEmail, [
+            'otp_session_id' => $challengeId,
+        ]);
 
         $this->otpSent = true;
 
@@ -237,10 +305,19 @@ class OtpChallenge extends SimplePage
             return;
         }
 
+        $payloadUserId = $this->payloadUserId($payload);
+        $payloadEmail = $this->payloadEmail($payload);
+
         $code = (string) random_int(100000, 999999);
 
         if (! $this->sendOtpEmail((string) ($payload['email'] ?? ''), $code)) {
             $this->otpSent = false;
+
+            $this->recordOtpAuditEvent(self::EVENT_OTP_FAILED, $payloadUserId, $payloadEmail, [
+                'reason' => 'mail_delivery_failed_on_initial_send',
+                'otp_session_id' => $challengeId,
+            ]);
+
             $this->addError('otp_code', 'We could not send your verification code yet. Please click Resend OTP.');
 
             return;
@@ -255,6 +332,10 @@ class OtpChallenge extends SimplePage
             $payload,
             now()->addMinutes(self::OTP_TTL_MINUTES)
         );
+
+        $this->recordOtpAuditEvent(self::EVENT_OTP_GENERATED_SENT, $payloadUserId, $payloadEmail, [
+            'otp_session_id' => $challengeId,
+        ]);
 
         $this->otpSent = true;
 
@@ -272,8 +353,12 @@ class OtpChallenge extends SimplePage
         return redirect()->route(self::LOGIN_ROUTE_NAME);
     }
 
-    public function updatedOtpDigits(mixed $value, string $key): void
+    public function updatedOtpDigits(mixed $value, ?string $key = null): void
     {
+        if (! is_string($key) || $key === '') {
+            return;
+        }
+
         $index = (int) $key;
 
         if (! array_key_exists($index, $this->otpDigits)) {
@@ -328,5 +413,58 @@ class OtpChallenge extends SimplePage
         }
 
         return true;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function payloadUserId(array $payload): int
+    {
+        return isset($payload['user_id']) && is_numeric($payload['user_id'])
+            ? (int) $payload['user_id']
+            : 0;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function payloadEmail(array $payload): ?string
+    {
+        return is_string($payload['email'] ?? null) && $payload['email'] !== ''
+            ? (string) $payload['email']
+            : null;
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function recordOtpAuditEvent(string $eventCode, int $userId, ?string $email = null, array $metadata = []): void
+    {
+        try {
+            if (! Schema::hasTable('audit_log')) {
+                return;
+            }
+
+            $parts = ["event={$eventCode}"];
+
+            if (is_string($email) && $email !== '') {
+                $parts[] = "email={$email}";
+            }
+
+            if ($metadata !== []) {
+                $parts[] = 'meta=' . json_encode($metadata, JSON_UNESCAPED_UNICODE);
+            }
+
+            AuditLog::query()->create([
+                'user_id' => $userId,
+                'module' => 'otp',
+                'action' => 'configure',
+                'description' => implode('; ', $parts),
+                'ip_address' => request()->ip(),
+                'timestamp' => now(),
+            ]);
+        } catch (\Throwable) {
+            // Non-fatal: OTP flow should continue even if audit logging fails.
+        }
     }
 }
