@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicantApplicationController;
 use App\Http\Controllers\AuthIntegrationController;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\Auth\OtpChallenge;
@@ -9,6 +10,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/apply', [ApplicantApplicationController::class, 'create'])->name('applicant.apply');
+Route::post('/apply', [ApplicantApplicationController::class, 'store'])->name('applicant.apply.store');
+Route::view('/address-demo', 'applicant.address-demo')->name('applicant.address-demo');
+
+Route::get('/track', function () {
+    return view('applicant.track');
+})->name('applicant.track');
 
 Route::middleware('guest')->get('/login', Login::class)
     ->middleware(SetUpPanel::class . ':admin')
