@@ -35,6 +35,23 @@
 - Filament panel access now allows all users with `status = active` (no longer admin-only).
 - Auth audit trail in Filament runtime is event-driven for login/logout and OTP flow events are recorded directly from the OTP page component.
 
+## Public Applicant UI Status (Current)
+
+- Public pages are currently Blade-based (non-Filament) for applicant intake/tracking entry points:
+    - `/apply` (multi-step wizard foundation)
+    - `/track` (tracking placeholder)
+    - `/address-demo` (standalone PH address selector component demo)
+- Applicant apply form now posts to backend validation endpoint (`POST /apply`) and relies on server-side Laravel validation/sanitization.
+
+### Reusable public form components
+
+- `resources/views/components/forms/page-feedback.blade.php`
+    - shared success + validation error banner block
+- `resources/views/components/forms/ph-address-selector.blade.php`
+    - reusable PH cascading selector (Region → Province → City/Municipality → Barangay)
+    - composes selected values into a hidden address field for backend submission
+    - can be dropped into any future applicant/staff-assisted forms
+
 ## Design Tokens (Mandatory for New UI)
 
 Use this palette and font pairing for all new screens and UI updates:
@@ -59,6 +76,8 @@ Implementation note:
     - `primary` → `#176334`
     - `success` → `#6C9C02`
     - `gray` → `#FFFDFF`
+
+For native file upload controls (`input[type=file]`), use emerald selector-button styling in public forms to match project palette consistency.
 
 ---
 

@@ -98,6 +98,8 @@ Supabase (storage only)
 - [Decisions](./decisions.md)
 - [Notifications](./notifications.md)
 - [API](./api.md)
+- [Frontend Development Guide](./frontend.md)
+- [Form Validation and Sanitization](./form-validation-sanitization.md)
 - [Troubleshooting](./troubleshooting.md)
 
 ## Supabase Auth Setup (Phase 2)

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2: Authentication and Access Management
+Phase 5: Application Submission Management (public intake foundation)
 
 ## Completed Tasks
 
@@ -19,6 +19,9 @@ Phase 2: Authentication and Access Management
 ## In Progress
 
 - [ ] Implement password reset flow
+- [ ] Persist applicant submissions and files to canonical application tables
+- [ ] Implement reference code generation on submission
+- [ ] Build applicant tracking search and status timeline
 
 ## Upcoming Phases
 
@@ -65,13 +68,13 @@ Phase 2: Authentication and Access Management
 
 ### Phase 5: Application Submission Management
 
-- [ ] Build assistance type selection page
-- [ ] Build dynamic requirements display
-- [ ] Build application form with applicant and beneficiary fields
-- [ ] Implement authorization letter logic in code
-- [ ] Build document upload functionality per requirement
+- [x] Build assistance type selection page
+- [x] Build dynamic requirements display
+- [x] Build application form with applicant and beneficiary fields
+- [x] Implement authorization letter logic in code
+- [x] Build document upload functionality per requirement
 - [ ] Implement reference code generation on submission
-- [ ] Build application tracking page
+- [x] Build application tracking page
 - [ ] Build application status page with ApplicationLog timeline
 - [ ] Implement staff-assisted submission
 - [ ] Build resubmission flow
@@ -231,3 +234,7 @@ Phase 2: Authentication and Access Management
 | 2026-04-04 | Restored auth audit trail after Filament auth migration: added login/logout event-based audit recording and reinstated OTP configure event logging (`OTP_GENERATED_SENT`, `OTP_RESEND`, `OTP_VERIFIED`, `OTP_FAILED`, `OTP_EXPIRED`) in the Filament OTP challenge flow.                                  | Copilot    |
 | 2026-04-04 | Updated global Filament panel color aliases to project palette (`primary=#176334`, `success=#6C9C02`, `gray=#FFFDFF`) and aligned docs with the new design tokens.                                                                                                                                        | Copilot    |
 | 2026-04-04 | Fixed Filament OTP Livewire crash on null lifecycle key (`updatedOtpDigits`) and added regression coverage in `FilamentOtpChallengeTest` to prevent reintroduction.                                                                                                                                       | Copilot    |
+| 2026-04-04 | Delivered public applicant intake UI foundation: `/apply` multi-step wizard (assistance selection, applicant/beneficiary details, requirement-specific uploads), `/track` placeholder, and themed landing directory links.                                                                                 | Copilot    |
+| 2026-04-04 | Added backend applicant submission validation/sanitization foundation via `StoreApplicantApplicationRequest` + `ApplicantApplicationController`, wired POST `/apply`, and added feature coverage in `ApplicantApplyValidationTest`.                                                                       | Copilot    |
+| 2026-04-04 | Introduced reusable public-form components: `x-forms.page-feedback` and `x-forms.ph-address-selector`; refactored `/apply` to consume them and added standalone address demo route/page at `/address-demo`.                                                                                               | Copilot    |
+| 2026-04-04 | UI refinement pass: numeric-only applicant phone enforcement, cascading PH address selectors (region/province/city/barangay), emerald upload button styling, and enforced frontend build verification (`npm run build`) during UI updates.                                                               | Copilot    |
