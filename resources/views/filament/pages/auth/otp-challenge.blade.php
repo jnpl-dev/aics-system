@@ -4,10 +4,18 @@
             max-width: 640px;
             margin: 0 auto;
             padding: 2rem;
-            border: 1px solid #d7d9df;
+            border: 1px solid rgba(23, 99, 52, 0.24);
             border-radius: 14px;
             background: #ffffff;
+            color: #176334;
             box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .dark .aics-otp-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 253, 255, 0.2);
+            color: #fff;
+            box-shadow: none;
         }
 
         .aics-otp-alert {
@@ -21,6 +29,12 @@
             border: 1px solid #f4b4be;
             background: #fff1f4;
             color: #9b1c31;
+        }
+
+        .dark .aics-otp-alert--error {
+            border-color: rgba(244, 114, 182, 0.35);
+            background: rgba(127, 29, 29, 0.35);
+            color: #fecdd3;
         }
 
         .aics-otp-form {
@@ -38,17 +52,21 @@
         .aics-otp-label {
             font-size: 0.95rem;
             font-weight: 600;
-            color: #111827;
+            color: #176334;
+        }
+
+        .dark .aics-otp-label {
+            color: #fffdff;
         }
 
         .aics-otp-star {
-            color: #d97706;
+            color: #6C9C02;
         }
 
         .aics-otp-link {
             border: 0;
             background: transparent;
-            color: #d97706;
+            color: #6C9C02;
             font-size: 0.92rem;
             font-weight: 600;
             cursor: pointer;
@@ -61,13 +79,17 @@
         }
 
         .aics-otp-link:disabled:hover {
-            color: #d97706;
+            color: #6C9C02;
             text-decoration: none;
         }
 
         .aics-otp-link:hover {
-            color: #b45309;
+            color: #176334;
             text-decoration: underline;
+        }
+
+        .dark .aics-otp-link:hover {
+            color: #a3e635;
         }
 
         .aics-otp-digit-group {
@@ -80,19 +102,25 @@
         .aics-otp-digit {
             width: 100%;
             min-width: 0;
-            border: 1px solid #d1d5db;
+            border: 1px solid rgba(23, 99, 52, 0.25);
             border-radius: 10px;
             padding: 0.72rem 0;
             text-align: center;
             font-size: 1.25rem;
             font-weight: 700;
-            color: #111827;
+            color: #176334;
             background: #fff;
         }
 
+        .dark .aics-otp-digit {
+            border-color: rgba(255, 253, 255, 0.22);
+            color: #fffdff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .aics-otp-digit:focus {
-            border-color: #f59e0b;
-            outline: 3px solid rgba(245, 158, 11, 0.18);
+            border-color: #6C9C02;
+            outline: 3px solid rgba(108, 156, 2, 0.24);
             outline-offset: 0;
         }
 
@@ -102,15 +130,15 @@
             min-width: 150px;
             border: 0;
             border-radius: 9px;
-            background: #f59e0b;
-            color: #1f2937;
+            background: #176334;
+            color: #fff;
             font-weight: 700;
             padding: 0.58rem 1.2rem;
             cursor: pointer;
         }
 
         .aics-otp-submit:hover {
-            background: #fbbf24;
+            background: #6C9C02;
         }
 
         .aics-otp-submit:disabled {
@@ -129,8 +157,8 @@
             width: 0.9rem;
             height: 0.9rem;
             border-radius: 999px;
-            border: 2px solid rgba(31, 41, 55, 0.28);
-            border-top-color: #1f2937;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #ffffff;
             animation: aics-otp-spin 0.7s linear infinite;
         }
 
@@ -148,15 +176,23 @@
         .aics-otp-reset button {
             border: 0;
             background: transparent;
-            color: #374151;
+            color: #176334;
             font-size: 0.92rem;
             font-weight: 600;
             cursor: pointer;
         }
 
         .aics-otp-reset button:hover {
-            color: #111827;
+            color: #6C9C02;
             text-decoration: underline;
+        }
+
+        .dark .aics-otp-reset button {
+            color: #fffdff;
+        }
+
+        .dark .aics-otp-reset button:hover {
+            color: #a3e635;
         }
     </style>
 

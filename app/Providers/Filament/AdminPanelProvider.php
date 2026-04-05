@@ -10,6 +10,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -30,9 +31,9 @@ class AdminPanelProvider extends PanelProvider
             ->spa(true, true)
             ->login(Login::class)
             ->colors([
-                'primary' => '#176334',
-                'success' => '#6C9C02',
-                'gray' => '#FFFDFF',
+                'primary' => Color::hex('#176334'),
+                'success' => Color::hex('#6C9C02'),
+                'gray' => Color::hex('#FFFDFF'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
