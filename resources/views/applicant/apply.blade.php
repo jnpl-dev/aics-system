@@ -83,6 +83,12 @@
                     </button>
                 </article>
             </div>
+
+            <div class="mt-6 flex justify-end">
+                <a href="{{ url('/') }}" data-clear-apply-draft="true" class="inline-flex rounded-md border border-[#176334]/30 px-3 py-2 text-sm font-semibold text-[#176334] hover:bg-[#176334]/5">
+                    Back to Directory
+                </a>
+            </div>
         </section>
 
         @php
@@ -345,7 +351,7 @@
             </div>
 
             <div class="mt-8 flex items-center justify-between gap-3">
-                <a href="{{ url('/') }}" data-clear-apply-draft="true" class="text-sm/6 font-semibold text-[#176334]">Back to Directory</a>
+                <a href="{{ url('/') }}" data-clear-apply-draft="true" class="text-sm/6 font-semibold text-[#176334]">Cancel</a>
 
                 <div class="flex items-center gap-2">
                     <button type="button" id="btn-prev" class="hidden rounded-md border border-[#176334]/30 bg-white px-3 py-2 text-sm font-semibold text-[#176334] hover:bg-[#176334]/5">Previous</button>
