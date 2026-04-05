@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Throwable;
 
 class AuthIntegrationController extends Controller
@@ -41,13 +40,6 @@ class AuthIntegrationController extends Controller
     private const LOGIN_FAILED_MAX_ATTEMPTS = 5;
 
     private const LOGIN_FAILED_COOLDOWN_MINUTES = 15;
-
-    private const DASHBOARD_TABS = [
-        'dashboard' => [
-            'title' => 'Dashboard',
-            'view' => 'admin.tabs.dashboard',
-        ],
-    ];
 
     public function session(Request $request): JsonResponse
     {
@@ -356,36 +348,6 @@ class AuthIntegrationController extends Controller
         ]);
     }
 
-    public function dashboard(Request $request): View
-    {
-        $requestedTab = (string) $request->query('tab', 'dashboard');
-        $tabKey = array_key_exists($requestedTab, self::DASHBOARD_TABS) ? $requestedTab : 'dashboard';
-        $tabConfig = self::DASHBOARD_TABS[$tabKey];
-        $tabData = $this->tabData($tabKey, $request);
-
-        return view('admin.dashboard', [
-            'activeTab' => $tabKey,
-            'pageTitle' => $tabConfig['title'],
-            'initialTabView' => $tabConfig['view'],
-            'sidebarRole' => (string) $request->query('role', 'admin'),
-            'sidebarFullName' => (string) $request->query('name', 'Loading user...'),
-            ...$tabData,
-        ]);
-    }
-
-    public function dashboardContent(Request $request, string $tab): View
-    {
-        if (!array_key_exists($tab, self::DASHBOARD_TABS)) {
-            abort(404);
-        }
-
-        return view(self::DASHBOARD_TABS[$tab]['view'], [
-            'tabKey' => $tab,
-            'pageTitle' => self::DASHBOARD_TABS[$tab]['title'],
-            ...$this->tabData($tab, $request),
-        ]);
-    }
-
     public function adminPing(Request $request): JsonResponse
     {
         return response()->json([
@@ -412,14 +374,6 @@ class AuthIntegrationController extends Controller
         return response()->json([
             'message' => 'Client should clear Supabase token locally.',
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function tabData(string $tab, ?Request $request = null): array
-    {
-        return [];
     }
 
     /**

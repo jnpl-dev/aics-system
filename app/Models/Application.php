@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Application extends Model
 {
@@ -33,6 +34,10 @@ class Application extends Model
         'beneficiary_address',
         'submitted_at',
         'updated_at',
+        'reviewed_by',
+        'reviewed_at',
+        'resubmission_remarks',
+        'resubmission_document_ids',
     ];
 
     protected function casts(): array
@@ -42,6 +47,13 @@ class Application extends Model
             'beneficiary_dob' => 'date',
             'submitted_at' => 'datetime',
             'updated_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'resubmission_document_ids' => 'array',
         ];
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'application_id', 'application_id');
     }
 }

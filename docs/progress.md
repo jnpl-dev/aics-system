@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5: Application Submission Management (public intake foundation)
+Phase 6: Application Review and Validation Management (AICS staff workflow)
 
 ## Completed Tasks
 
@@ -19,10 +19,11 @@ Phase 5: Application Submission Management (public intake foundation)
 ## In Progress
 
 - [ ] Implement password reset flow
-- [ ] Persist applicant submissions and files to canonical application tables
-- [ ] Implement reference code generation on submission
+- [x] Persist applicant submissions and files to canonical application tables
+- [x] Implement reference code generation on submission
 - [ ] Build applicant tracking search and status timeline
-- [ ] Enforce image-only uploads (`jpg/jpeg`) with 1MB max and convert images to PDF before saving to Supabase bucket
+- [x] Enforce image-only uploads (`jpg/jpeg`) with 1MB max and convert images to PDF before saving to Supabase bucket
+- [x] Build resubmission flow
 
 ### Future Intake Quality Roadmap (Planned)
 
@@ -89,14 +90,14 @@ Phase 5: Application Submission Management (public intake foundation)
 
 ### Phase 6: Application Review and Validation Management
 
-- [ ] Build application queue for AICS Staff
-- [ ] Build application detail view with all documents
+- [x] Build application queue for AICS Staff
+- [x] Build application detail view with all documents
 - [ ] Implement document validation workflow
-- [ ] Implement approval / rejection / resubmission request actions
-- [ ] Build feedback remarks form
-- [ ] Implement ApplicationReview record creation
-- [ ] Implement ApplicationLog entry creation
-- [ ] Build forward to MSWD Officer functionality
+- [x] Implement approval / rejection / resubmission request actions
+- [x] Build feedback remarks form
+- [x] Implement ApplicationReview record creation
+- [x] Implement ApplicationLog entry creation
+- [x] Build forward to MSWD Officer functionality
 - [ ] Implement auto-SMS notification trigger
 
 ### Phase 7: Social Case Study and Assistance Code Management
@@ -247,3 +248,36 @@ Phase 5: Application Submission Management (public intake foundation)
 | 2026-04-04 | Introduced reusable public-form components: `x-forms.page-feedback` and `x-forms.ph-address-selector`; refactored `/apply` to consume them and added standalone address demo route/page at `/address-demo`.                                                                                                                             | Copilot    |
 | 2026-04-04 | UI refinement pass: numeric-only applicant phone enforcement, cascading PH address selectors (region/province/city/barangay), emerald upload button styling, and enforced frontend build verification (`npm run build`) during UI updates.                                                                                              | Copilot    |
 | 2026-04-05 | Implemented application persistence slice: added schema-aligned `assistance_category`, `requirement`, `application`, and `document` tables/models; applicant submission now creates application records, generates unique `reference_code`, uploads files to configured Supabase disk, and stores document metadata + file paths in DB. | Copilot    |
+| 2026-04-05 | Completed applicant submission UX flow: final submit button now shows loading spinner/disabled state, successful submit redirects to dynamic reference page with copy-to-clipboard support, and includes clear track-guidance plus back-to-home action.                                                                                 | Copilot    |
+| 2026-04-05 | Implemented AICS staff review workflow in Filament: status-tabbed application queue, review/view pages, modal PDF preview with zoom controls, return-for-resubmission action (remarks + selected required docs), and forward-to-MSWDO action.                                                                                           | Copilot    |
+| 2026-04-05 | Added resilient status transition + audit trail writing (`application_review` and `application_log`) with enum-aware fallback handling and schema-safe column checks to prevent runtime failures across environment drift.                                                                                                              | Copilot    |
+| 2026-04-05 | Finalized workflow UI consistency: actions column labeled `Actions`, removed obsolete queue-info badge, and updated resubmission modal to show each document's requirement name instead of generic supporting-document text.                                                                                                            | Copilot    |
+
+## Important Takeaways and Reusable Components
+
+### Reusable components/patterns now available
+
+- **Reusable Filament page action pattern (bottom-placed custom buttons):**
+    - Use `mountAction('actionName')` in Blade and expose `protected function actionNameAction(): Action` in the page class.
+    - This keeps actions reusable without relying on header-action rendering.
+    - Reference: `app/Filament/Resources/Applications/Pages/ReviewApplication.php`.
+
+- **Reusable document preview modal behavior:**
+    - Shared state contract: `selectedDocumentUrl`, `selectedDocumentName`, `isDocumentViewerOpen`, `viewerZoom`.
+    - Shared methods: `openDocument()`, `increaseZoom()`, `decreaseZoom()`, `resetZoom()`, `closeDocumentViewer()`, and computed `getSelectedDocumentEmbedUrlProperty()`.
+    - Reference: `ReviewApplication` and `ViewApplication` pages.
+
+- **Reusable status-safe transition utility:**
+    - Use enum introspection (`SHOW COLUMNS`) + `resolvePreferredStatus()` to avoid invalid status writes when DB enum differs by environment.
+    - Reference: `ReviewApplication::resolvePreferredStatus()` + `getApplicationStatusEnumValues()`.
+
+- **Reusable safe audit writes under evolving schemas:**
+    - Gate writes with `Schema::hasTable()` / `Schema::hasColumn()` and intersect payload keys with real table columns.
+    - Prevents breakage during partial migrations while preserving observability.
+    - Reference: `recordApplicationReview()` and `recordApplicationLog()`.
+
+### Practical future-development notes
+
+- Keep review-flow labels requirement-aware (avoid generic document labels) to improve operator accuracy.
+- Prefer one canonical display label per status in table/page layers to avoid wording drift.
+- For future role workflows (MSWD, Mayor, Accounting), copy the same action + audit + enum-safe transition pattern to minimize regressions.

@@ -23,12 +23,20 @@ class AuditLogResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->check() && auth()->user()->canAccessPanel(Filament::getCurrentPanel());
+        if (! auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+        $role = (string) ($user->role ?? '');
+
+        return $user->canAccessPanel(Filament::getCurrentPanel())
+            && in_array($role, ['admin', 'system_admin'], true);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->check() && auth()->user()->canAccessPanel(Filament::getCurrentPanel());
+        return static::shouldRegisterNavigation();
     }
 
     public static function table(Table $table): Table

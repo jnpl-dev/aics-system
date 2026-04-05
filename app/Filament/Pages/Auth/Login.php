@@ -9,6 +9,7 @@ use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Notifications\Notification;
+use Filament\Panel;
 use Filament\Schemas\Schema;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\SessionGuard;
@@ -58,7 +59,23 @@ class Login extends BaseLogin
             $this->throwFailureValidationException();
         }
 
-        if ($user instanceof FilamentUser && (! $user->canAccessPanel(Filament::getCurrentOrDefaultPanel()))) {
+        $currentPanel = Filament::getCurrentOrDefaultPanel();
+
+        if ($user instanceof FilamentUser && (! $user->canAccessPanel($currentPanel))) {
+            $accessiblePanel = $this->resolveAccessiblePanel($user);
+
+            if ($accessiblePanel instanceof Panel) {
+                Notification::make()
+                    ->title('Use your assigned portal')
+                    ->body('Redirecting you to the correct login page for your account.')
+                    ->warning()
+                    ->send();
+
+                $this->redirect($accessiblePanel->getLoginUrl(), navigate: true);
+
+                return null;
+            }
+
             $this->throwFailureValidationException();
         }
 
@@ -72,7 +89,12 @@ class Login extends BaseLogin
 
         session()->put(self::OTP_CHALLENGE_SESSION_KEY, $challengeId);
 
-        $this->redirectRoute('filament.auth.otp', navigate: true);
+        $panelId = $currentPanel->getId();
+        $otpRouteName = $panelId === 'aics-staff'
+            ? 'filament.aics-staff.auth.otp'
+            : 'filament.auth.otp';
+
+        $this->redirectRoute($otpRouteName, navigate: true);
 
         Notification::make()
             ->title('Verification started')
@@ -158,6 +180,17 @@ class Login extends BaseLogin
     protected function otpCacheKey(string $challengeId): string
     {
         return "filament-login-otp:{$challengeId}";
+    }
+
+    protected function resolveAccessiblePanel(FilamentUser $user): ?Panel
+    {
+        foreach (Filament::getPanels() as $panel) {
+            if ($user->canAccessPanel($panel)) {
+                return $panel;
+            }
+        }
+
+        return null;
     }
 
     /**

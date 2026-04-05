@@ -28,7 +28,7 @@
 
             <div class="grid gap-4 md:grid-cols-3">
                 <a
-                    href="{{ route('login') }}"
+                    href="{{ url('/aics-staff/login') }}"
                     class="inline-flex items-center justify-center rounded-lg bg-[#176334] px-5 py-4 text-white font-medium hover:opacity-90 transition"
                 >
                     Staff Login

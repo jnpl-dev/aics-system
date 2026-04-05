@@ -59,7 +59,32 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return ($this->status ?? null) === 'active';
+        $status = $this->normalizeAccessToken((string) ($this->status ?? ''));
+
+        if ($status !== 'active') {
+            return false;
+        }
+
+        $panelId = $this->normalizeAccessToken($panel->getId());
+        $role = $this->normalizeAccessToken((string) ($this->role ?? ''));
+
+        if ($panelId === '' || $role === '') {
+            return false;
+        }
+
+        $panelRoleMap = [
+            'admin' => ['admin', 'system_admin'],
+            'aics_staff' => ['aics_staff'],
+        ];
+
+        $allowedRoles = $panelRoleMap[$panelId] ?? [$panelId];
+
+        return in_array($role, $allowedRoles, true);
+    }
+
+    private function normalizeAccessToken(string $value): string
+    {
+        return str_replace('-', '_', strtolower(trim($value)));
     }
 
     public function getFilamentName(): string

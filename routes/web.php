@@ -28,9 +28,12 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/otp', OtpChallenge::class)
         ->middleware(SetUpPanel::class . ':admin')
         ->name('filament.auth.otp');
+
+    Route::get('/aics-staff/otp', OtpChallenge::class)
+        ->middleware(SetUpPanel::class . ':aics-staff')
+        ->name('filament.aics-staff.auth.otp');
 });
 
-Route::get('/dashboard', [AuthIntegrationController::class, 'dashboard'])->name('dashboard');
 Route::post('/auth/login-attempt', [AuthIntegrationController::class, 'logLoginAttempt'])->name('auth.login-attempt');
 Route::post('/auth/login-cooldown-check', [AuthIntegrationController::class, 'checkLoginCooldown'])->name('auth.login-cooldown-check');
 
@@ -43,10 +46,4 @@ Route::middleware(['supabase.auth'])->group(function (): void {
 
 Route::middleware(['supabase.auth', 'role:admin'])->group(function (): void {
     Route::get('/admin/ping', [AuthIntegrationController::class, 'adminPing'])->name('admin.ping');
-});
-
-Route::middleware(['supabase.auth', 'role:admin'])->group(function (): void {
-    Route::get('/dashboard/content/{tab}', [AuthIntegrationController::class, 'dashboardContent'])
-        ->where('tab', '[a-z\-]+')
-        ->name('dashboard.content');
 });

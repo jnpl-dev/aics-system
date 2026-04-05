@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\User;
+use Filament\Panel;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -56,5 +57,31 @@ class UserModelMappingTest extends TestCase
         ]);
 
         $this->assertSame('fallback@example.test', $model->getFilamentName());
+    }
+
+    public function test_user_model_allows_aics_staff_access_with_hyphenated_role_and_title_case_status(): void
+    {
+        $panel = \Mockery::mock(Panel::class);
+        $panel->shouldReceive('getId')->once()->andReturn('aics-staff');
+
+        $user = new User([
+            'role' => 'AICS-STAFF',
+            'status' => 'Active',
+        ]);
+
+        $this->assertTrue($user->canAccessPanel($panel));
+    }
+
+    public function test_user_model_supports_future_panels_with_matching_role(): void
+    {
+        $panel = \Mockery::mock(Panel::class);
+        $panel->shouldReceive('getId')->once()->andReturn('review-team');
+
+        $user = new User([
+            'role' => 'review_team',
+            'status' => 'active',
+        ]);
+
+        $this->assertTrue($user->canAccessPanel($panel));
     }
 }
