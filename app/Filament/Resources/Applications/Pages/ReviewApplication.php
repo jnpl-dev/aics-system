@@ -70,7 +70,7 @@ class ReviewApplication extends Page
                 /** @var Application $record */
                 $record = $this->getRecord();
                 $fromStatus = (string) $record->status;
-                $toStatus = $this->resolvePreferredStatus('forwarded_to_mswd', ['under_review']);
+                $toStatus = $this->resolvePreferredStatus('forwarded_to_mswdo');
 
                 if ($toStatus === null) {
                     Notification::make()
@@ -100,7 +100,7 @@ class ReviewApplication extends Page
 
                 $this->recordApplicationReview(
                     $record,
-                    decision: 'approved',
+                    decision: (string) $toStatus,
                     remarks: 'Validated by AICS staff and forwarded to MSWDO.'
                 );
 
@@ -148,7 +148,7 @@ class ReviewApplication extends Page
                 /** @var Application $record */
                 $record = $this->getRecord();
                 $fromStatus = (string) $record->status;
-                $toStatus = $this->resolvePreferredStatus('pending_additional_docs', ['resubmission_required', 'rejected']);
+                $toStatus = $this->resolvePreferredStatus('resubmission_required');
 
                 if ($toStatus === null) {
                     Notification::make()
@@ -409,20 +409,18 @@ class ReviewApplication extends Page
 
         $this->applicationStatusEnumValuesCache = [
             'submitted',
-            'under_review',
-            'forwarded_to_mswd',
-            'pending_additional_docs',
-            'approved_by_mswd',
-            'coding',
-            'forwarded_to_mayor',
-            'approved_by_mayor',
-            'voucher_preparation',
+            'resubmission_required',
+            'forwarded_to_mswdo',
+            'additional_docs_required',
+            'pending_assistance_code',
+            'forwarded_to_mayors_office',
+            'code_adjustment_required',
+            'pending_voucher',
             'forwarded_to_accounting',
-            'forwarded_to_treasury',
+            'voucher_adjustment_required',
+            'pending_cheque',
+            'cheque_on_hold',
             'cheque_ready',
-            'claimed',
-            'on_hold',
-            'rejected',
         ];
 
         return $this->applicationStatusEnumValuesCache;
@@ -470,6 +468,7 @@ class ReviewApplication extends Page
             'application_id' => $application->application_id,
             'performed_by' => auth()->user()?->user_id,
             'action' => $action,
+            'decision' => $toStatus,
             'from_status' => $fromStatus,
             'to_status' => $toStatus,
             'remarks' => $remarks,
@@ -494,18 +493,8 @@ class ReviewApplication extends Page
      */
     private function buildResubmissionLogRemarks(string $remarks, array $documentIds): string
     {
-        $parts = [];
-
-        if ($remarks !== '') {
-            $parts[] = 'remarks=' . $remarks;
-        }
-
-        if ($documentIds !== []) {
-            $parts[] = 'document_ids=' . json_encode($documentIds, JSON_UNESCAPED_UNICODE);
-        }
-
-        return $parts === []
-            ? 'Resubmission requested.'
-            : implode('; ', $parts);
+        return $remarks !== ''
+            ? $remarks
+            : 'Resubmission requested.';
     }
 }

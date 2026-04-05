@@ -11,6 +11,18 @@ class ApplicantApplyValidationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_apply_page_shows_submit_button_only_as_final_step_control(): void
+    {
+        $response = $this->get(route('applicant.apply'));
+
+        $response
+            ->assertSuccessful()
+            ->assertSee('id="btn-final"', false)
+            ->assertSee('id="btn-final" class="hidden', false)
+            ->assertSee('Submit Application')
+            ->assertDontSee('type="submit"', false);
+    }
+
     private function fakeImageUpload(string $name): UploadedFile
     {
         return UploadedFile::fake()->create($name, 100, 'image/jpeg');

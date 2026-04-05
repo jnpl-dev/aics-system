@@ -16,6 +16,7 @@ class ApplicationLog extends Model
         'application_id',
         'performed_by',
         'action',
+        'decision',
         'from_status',
         'to_status',
         'remarks',

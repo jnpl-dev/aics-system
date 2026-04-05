@@ -39,11 +39,13 @@
 
 - Public pages are currently Blade-based (non-Filament) for applicant intake/tracking entry points:
     - `/apply` (multi-step wizard foundation)
-    - `/track` (tracking placeholder)
+    - `/track` (reference/surname tracking lookup + timeline + detailed history + requested document resubmission)
     - `/address-demo` (standalone PH address selector component demo)
 - Applicant apply form now posts to backend validation endpoint (`POST /apply`) and relies on server-side Laravel validation/sanitization.
 - Applicant submit flow now persists to DB (`application` + `document`) and stores uploaded files in Supabase bucket via Laravel filesystem disk.
 - Current accepted upload types are JPG/JPEG images only (1MB max per file), and uploads are converted server-side to PDF before storage.
+- Applicant tracking detailed history renders submission events plus `APPLICATION_REVIEW` stage/decision entries; directional `from_status → to_status` transitions are not shown in applicant-facing history.
+- Applicant resubmission now uses replacement behavior for requested documents: uploaded JPG/JPEG files are validated, converted to PDF, old requested files are deleted from Supabase, and existing `document` rows are updated (not appended) when possible.
 
 ### Future document-intake enhancement direction (planned)
 
@@ -352,7 +354,7 @@ class ApplicationQueue extends Component
     <select wire:model.live="status">
         <option value="">All statuses</option>
         <option value="submitted">Submitted</option>
-        <option value="under_review">Under Review</option>
+        <option value="resubmission_required">Resubmission Required</option>
     </select>
 
     <div wire:loading>Loading...</div>
@@ -552,14 +554,14 @@ class ApplicationDetail extends Component
 
     public function approve()
     {
-        $this->application->update(['status' => 'forwarded_to_mswd']);
+        $this->application->update(['status' => 'forwarded_to_mswdo']);
 
         ApplicationLog::create([
             'application_id' => $this->application->application_id,
             'performed_by' => auth()->id(),
             'action' => 'Application approved and forwarded to MSWD',
-            'from_status' => 'under_review',
-            'to_status' => 'forwarded_to_mswd',
+            'from_status' => 'submitted',
+            'to_status' => 'forwarded_to_mswdo',
         ]);
 
         $this->dispatch('action-completed', message: 'Application approved successfully');
@@ -569,14 +571,14 @@ class ApplicationDetail extends Component
     {
         $this->validate(['remarks' => 'required|string']);
 
-        $this->application->update(['status' => 'rejected']);
+    $this->application->update(['status' => 'resubmission_required']);
 
         ApplicationLog::create([
             'application_id' => $this->application->application_id,
             'performed_by' => auth()->id(),
             'action' => 'Application rejected',
-            'from_status' => 'under_review',
-            'to_status' => 'rejected',
+            'from_status' => 'submitted',
+            'to_status' => 'resubmission_required',
             'remarks' => $this->remarks,
         ]);
 
@@ -780,21 +782,21 @@ Use these Tailwind classes consistently across all role dashboards:
 // In a Blade component or helper
 function statusColor(string $status): string {
     return match($status) {
-        'submitted'                => 'bg-blue-100 text-blue-800',
-        'under_review'             => 'bg-yellow-100 text-yellow-800',
-        'forwarded_to_mswd'        => 'bg-yellow-100 text-yellow-800',
-        'pending_additional_docs'  => 'bg-orange-100 text-orange-800',
-        'approved_by_mswd'         => 'bg-teal-100 text-teal-800',
-        'coding'                   => 'bg-yellow-100 text-yellow-800',
-        'forwarded_to_mayor'       => 'bg-yellow-100 text-yellow-800',
-        'approved_by_mayor'        => 'bg-teal-100 text-teal-800',
-        'voucher_preparation'      => 'bg-yellow-100 text-yellow-800',
-        'forwarded_to_accounting'  => 'bg-yellow-100 text-yellow-800',
-        'forwarded_to_treasury'    => 'bg-yellow-100 text-yellow-800',
-        'cheque_ready'             => 'bg-green-100 text-green-800',
-        'claimed'                  => 'bg-gray-100 text-gray-800',
-        'on_hold'                  => 'bg-orange-100 text-orange-800',
-        'rejected'                 => 'bg-red-100 text-red-800',
+        'submitted',
+        'pending_assistance_code',
+        'pending_voucher',
+        'pending_cheque'           => 'bg-blue-100 text-blue-800',
+        'resubmission_required',
+        'additional_docs_required',
+        'code_adjustment_required',
+        'voucher_adjustment_required',
+        'cheque_on_hold'           => 'bg-orange-100 text-orange-800',
+        'forwarded_to_mswdo',
+        'forwarded_to_mayors_office',
+        'forwarded_to_accounting',
+        'cheque_ready'             => 'bg-emerald-100 text-emerald-800',
+        'claimed',
+        'cheque_claimed'           => 'bg-gray-100 text-gray-800',
         default                    => 'bg-gray-100 text-gray-800',
     };
 }

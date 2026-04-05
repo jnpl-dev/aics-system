@@ -44,20 +44,18 @@ return new class extends Migration
                 $table->string('reference_code', 50)->unique();
                 $table->enum('status', [
                     'submitted',
-                    'under_review',
                     'resubmission_required',
-                    'forwarded_to_mswd',
-                    'pending_additional_docs',
-                    'approved_by_mswd',
-                    'coding',
-                    'forwarded_to_mayor',
-                    'approved_by_mayor',
-                    'voucher_preparation',
+                    'forwarded_to_mswdo',
+                    'additional_docs_required',
+                    'pending_assistance_code',
+                    'forwarded_to_mayors_office',
+                    'code_adjustment_required',
+                    'pending_voucher',
                     'forwarded_to_accounting',
-                    'forwarded_to_treasury',
-                    'on_hold',
+                    'voucher_adjustment_required',
+                    'pending_cheque',
+                    'cheque_on_hold',
                     'cheque_ready',
-                    'claimed',
                 ])->default('submitted');
                 $table->string('applicant_last_name', 100);
                 $table->string('applicant_first_name', 100);

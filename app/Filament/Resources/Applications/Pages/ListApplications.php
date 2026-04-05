@@ -27,23 +27,28 @@ class ListApplications extends ListRecords
                 ->badge($this->countPending())
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', [
                     'submitted',
-                    'under_review',
+                    'pending_assistance_code',
+                    'pending_voucher',
+                    'pending_cheque',
+                    'cheque_on_hold',
+                    'cheque_ready',
                 ])),
 
             'forwarded' => Tab::make('Forwarded')
                 ->badge($this->countForwarded())
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', [
-                    'forwarded_to_mswd',
-                    'forwarded_to_mayor',
+                    'forwarded_to_mswdo',
+                    'forwarded_to_mayors_office',
                     'forwarded_to_accounting',
-                    'forwarded_to_treasury',
                 ])),
 
             'returned' => Tab::make('Returned')
                 ->badge($this->countReturned())
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', [
-                    'pending_additional_docs',
+                    'additional_docs_required',
                     'resubmission_required',
+                    'code_adjustment_required',
+                    'voucher_adjustment_required',
                 ])),
         ];
     }
@@ -56,21 +61,21 @@ class ListApplications extends ListRecords
     private function countPending(): int
     {
         return Application::query()
-            ->whereIn('status', ['submitted', 'under_review'])
+            ->whereIn('status', ['submitted', 'pending_assistance_code', 'pending_voucher', 'pending_cheque', 'cheque_on_hold', 'cheque_ready'])
             ->count();
     }
 
     private function countForwarded(): int
     {
         return Application::query()
-            ->whereIn('status', ['forwarded_to_mswd', 'forwarded_to_mayor', 'forwarded_to_accounting', 'forwarded_to_treasury'])
+            ->whereIn('status', ['forwarded_to_mswdo', 'forwarded_to_mayors_office', 'forwarded_to_accounting'])
             ->count();
     }
 
     private function countReturned(): int
     {
         return Application::query()
-            ->whereIn('status', ['pending_additional_docs', 'resubmission_required'])
+            ->whereIn('status', ['additional_docs_required', 'resubmission_required', 'code_adjustment_required', 'voucher_adjustment_required'])
             ->count();
     }
 }

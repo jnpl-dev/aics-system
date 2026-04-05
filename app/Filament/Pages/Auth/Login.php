@@ -132,6 +132,10 @@ class Login extends BaseLogin
     {
         return [
             $this->getAuthenticateFormAction(),
+            Action::make('backToDirectory')
+                ->label('Back to Directory')
+                ->url(url('/'))
+                ->color('gray'),
         ];
     }
 

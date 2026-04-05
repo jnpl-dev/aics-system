@@ -345,12 +345,12 @@
             </div>
 
             <div class="mt-8 flex items-center justify-between gap-3">
-                <a href="{{ url('/') }}" class="text-sm/6 font-semibold text-[#176334]">Cancel</a>
+                <a href="{{ url('/') }}" data-clear-apply-draft="true" class="text-sm/6 font-semibold text-[#176334]">Back to Directory</a>
 
                 <div class="flex items-center gap-2">
                     <button type="button" id="btn-prev" class="hidden rounded-md border border-[#176334]/30 bg-white px-3 py-2 text-sm font-semibold text-[#176334] hover:bg-[#176334]/5">Previous</button>
                     <button type="button" id="btn-next" class="rounded-md bg-[#176334] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02]">Next</button>
-                    <button type="button" id="btn-final" class="hidden inline-flex items-center gap-2 rounded-md bg-[#6C9C02] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02] disabled:cursor-not-allowed disabled:opacity-70">
+                    <button type="button" id="btn-final" class="hidden items-center gap-2 rounded-md bg-[#6C9C02] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02] disabled:cursor-not-allowed disabled:opacity-70">
                         <svg id="btn-final-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
@@ -380,12 +380,207 @@
             const selectedAssistanceDisplay = document.getElementById('selected-assistance-display');
             const btnFinalSpinner = document.getElementById('btn-final-spinner');
             const btnFinalLabel = document.getElementById('btn-final-label');
+            const cancelDraftLinks = Array.from(document.querySelectorAll('[data-clear-apply-draft="true"]'));
             const initialCategory = @json($initialCategory);
             const relationshipSelect = document.getElementById('relationship-to-beneficiary');
             const requirementUploadGroups = Array.from(document.querySelectorAll('.requirement-upload-group'));
             const authorizationLetterFields = Array.from(document.querySelectorAll('.authorization-letter-field'));
             const phoneInputs = Array.from(document.querySelectorAll('[data-numeric-phone="true"]'));
+            const draftStorageKey = 'aics_apply_form_draft_v1';
+            const fileDraftStorageKey = 'aics_apply_file_draft_v1';
+            const fileDraftMaxBytes = 4 * 1024 * 1024;
             let isSubmitting = false;
+
+            const loadJsonFromStorage = (key) => {
+                try {
+                    const raw = localStorage.getItem(key);
+                    return raw ? JSON.parse(raw) : null;
+                } catch (error) {
+                    return null;
+                }
+            };
+
+            const saveJsonToStorage = (key, value) => {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            };
+
+            const clearApplyDraftState = () => {
+                try {
+                    localStorage.removeItem(draftStorageKey);
+                    localStorage.removeItem(fileDraftStorageKey);
+                } catch (error) {
+                    // Ignore storage cleanup errors and continue navigation.
+                }
+
+                selectedAssistanceInput.value = '';
+                selectedAssistanceDisplay.textContent = '-';
+            };
+
+            const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(reader.error || new Error('Unable to read file.'));
+                reader.readAsDataURL(file);
+            });
+
+            function persistFormDraft() {
+                const fields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'));
+                const values = {};
+
+                fields.forEach((field) => {
+                    if (!field.name || field.disabled || field.type === 'file' || field.name === '_token') {
+                        return;
+                    }
+
+                    if ((field.type === 'checkbox' || field.type === 'radio')) {
+                        values[field.name] = field.checked;
+                        return;
+                    }
+
+                    values[field.name] = field.value;
+                });
+
+                saveJsonToStorage(draftStorageKey, {
+                    updatedAt: Date.now(),
+                    values,
+                });
+            }
+
+            function restoreFormDraft() {
+                const draft = loadJsonFromStorage(draftStorageKey);
+
+                if (!draft || typeof draft !== 'object' || !draft.values || typeof draft.values !== 'object') {
+                    return;
+                }
+
+                const fields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'));
+
+                fields.forEach((field) => {
+                    if (!field.name || field.type === 'file' || field.name === '_token') {
+                        return;
+                    }
+
+                    if (!Object.prototype.hasOwnProperty.call(draft.values, field.name)) {
+                        return;
+                    }
+
+                    const value = draft.values[field.name];
+
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        if (!field.checked && Boolean(value)) {
+                            field.checked = true;
+                        }
+                        return;
+                    }
+
+                    if (!field.value && typeof value === 'string') {
+                        field.value = value;
+                    }
+                });
+
+                const categoryFromDraft = typeof draft.values['category_name'] === 'string'
+                    ? draft.values['category_name']
+                    : '';
+
+                if (!selectedAssistanceInput.value && categoryFromDraft) {
+                    selectedAssistanceInput.value = categoryFromDraft;
+                    selectedAssistanceDisplay.textContent = categoryFromDraft;
+                }
+            }
+
+            function persistAddressPreviewFromHiddenInputs() {
+                document.querySelectorAll('[data-ph-address-selector]').forEach((wrapper) => {
+                    const hiddenAddressInput = wrapper.querySelector('[data-role="composed-address"]');
+                    const addressPreviewInput = wrapper.querySelector('[data-role="address-preview"]');
+
+                    if (!hiddenAddressInput || !addressPreviewInput) {
+                        return;
+                    }
+
+                    if (hiddenAddressInput.value && !addressPreviewInput.value) {
+                        addressPreviewInput.value = hiddenAddressInput.value;
+                    }
+                });
+            }
+
+            async function persistFileDraft(input) {
+                if (!(input instanceof HTMLInputElement) || input.type !== 'file' || !input.name) {
+                    return;
+                }
+
+                const draft = loadJsonFromStorage(fileDraftStorageKey) || { updatedAt: Date.now(), files: {} };
+                draft.files = draft.files || {};
+
+                if (!input.files || input.files.length === 0) {
+                    delete draft.files[input.name];
+                    draft.updatedAt = Date.now();
+                    saveJsonToStorage(fileDraftStorageKey, draft);
+                    return;
+                }
+
+                const file = input.files[0];
+                const dataUrl = await readFileAsDataUrl(file);
+
+                draft.files[input.name] = {
+                    name: file.name,
+                    type: file.type,
+                    lastModified: file.lastModified,
+                    size: file.size,
+                    dataUrl,
+                };
+
+                const totalSize = Object.values(draft.files)
+                    .reduce((sum, current) => sum + Number(current?.size ?? 0), 0);
+
+                if (totalSize > fileDraftMaxBytes) {
+                    delete draft.files[input.name];
+                }
+
+                draft.updatedAt = Date.now();
+                saveJsonToStorage(fileDraftStorageKey, draft);
+            }
+
+            async function restoreFileDrafts() {
+                const draft = loadJsonFromStorage(fileDraftStorageKey);
+
+                if (!draft || typeof draft !== 'object' || !draft.files || typeof draft.files !== 'object') {
+                    return;
+                }
+
+                const fileInputs = Array.from(form.querySelectorAll('input[type="file"][name]'));
+
+                for (const input of fileInputs) {
+                    if (!(input instanceof HTMLInputElement) || !input.name || input.files?.length) {
+                        continue;
+                    }
+
+                    const fileDraft = draft.files[input.name];
+
+                    if (!fileDraft || typeof fileDraft.dataUrl !== 'string' || fileDraft.dataUrl === '') {
+                        continue;
+                    }
+
+                    try {
+                        const response = await fetch(fileDraft.dataUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], fileDraft.name || 'draft-upload.jpg', {
+                            type: fileDraft.type || 'image/jpeg',
+                            lastModified: Number(fileDraft.lastModified || Date.now()),
+                        });
+
+                        const transfer = new DataTransfer();
+                        transfer.items.add(file);
+                        input.files = transfer.files;
+                    } catch (error) {
+                        // If restoration fails (browser/security constraints), user can pick file again.
+                    }
+                }
+            }
 
             function setSubmittingState(value) {
                 isSubmitting = value;
@@ -434,6 +629,7 @@
                 });
 
                 updateAuthorizationLetterRequirement();
+                persistFormDraft();
             }
 
             function validateCurrentStep() {
@@ -481,6 +677,7 @@
                 btnPrev.classList.toggle('hidden', currentStep === 1);
                 btnNext.classList.toggle('hidden', currentStep === totalSteps);
                 btnFinal.classList.toggle('hidden', currentStep !== totalSteps);
+                btnFinal.classList.toggle('inline-flex', currentStep === totalSteps);
 
                 refreshHeader();
             }
@@ -497,12 +694,48 @@
                     assistanceSelection.classList.add('hidden');
                     form.classList.remove('hidden');
                     updateAuthorizationLetterRequirement();
+                    persistFormDraft();
 
                     goToStep(1);
                 });
             });
 
-            relationshipSelect?.addEventListener('change', updateAuthorizationLetterRequirement);
+            relationshipSelect?.addEventListener('change', () => {
+                updateAuthorizationLetterRequirement();
+                persistFormDraft();
+            });
+
+            cancelDraftLinks.forEach((link) => {
+                link.addEventListener('click', () => {
+                    clearApplyDraftState();
+                });
+            });
+
+            form.addEventListener('input', (event) => {
+                const target = event.target;
+
+                if (!(target instanceof HTMLElement)) {
+                    return;
+                }
+
+                if (target instanceof HTMLInputElement && target.type === 'file') {
+                    persistFileDraft(target);
+                    return;
+                }
+
+                persistFormDraft();
+            });
+
+            form.addEventListener('change', (event) => {
+                const target = event.target;
+
+                if (target instanceof HTMLInputElement && target.type === 'file') {
+                    persistFileDraft(target);
+                    return;
+                }
+
+                persistFormDraft();
+            });
 
             btnPrev.addEventListener('click', () => {
                 if (currentStep > 1) {
@@ -529,7 +762,22 @@
                 form.requestSubmit();
             });
 
-            form.addEventListener('submit', () => {
+            form.addEventListener('submit', (event) => {
+                if (currentStep !== totalSteps) {
+                    event.preventDefault();
+
+                    if (currentStep < totalSteps) {
+                        goToStep(currentStep + 1);
+                    }
+
+                    return;
+                }
+
+                if (!validateCurrentStep()) {
+                    event.preventDefault();
+                    return;
+                }
+
                 if (!isSubmitting) {
                     setSubmittingState(true);
                 }
@@ -545,8 +793,23 @@
                 goToStep(1);
             }
 
+            restoreFormDraft();
+
+            if (!initialCategory && selectedAssistanceInput.value) {
+                hasStartedForm = true;
+                assistanceSelection.classList.add('hidden');
+                form.classList.remove('hidden');
+                selectedAssistanceDisplay.textContent = selectedAssistanceInput.value;
+                updateRequirementUploadGroup(selectedAssistanceInput.value);
+                goToStep(1);
+            }
+
+            persistAddressPreviewFromHiddenInputs();
+            restoreFileDrafts();
+
             refreshHeader();
             updateAuthorizationLetterRequirement();
+            persistFormDraft();
         })();
     </script>
 </body>

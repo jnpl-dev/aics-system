@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApplicantApplicationController;
+use App\Http\Controllers\ApplicantTrackingController;
 use App\Http\Controllers\AuthIntegrationController;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\Auth\OtpChallenge;
@@ -16,9 +17,10 @@ Route::post('/apply', [ApplicantApplicationController::class, 'store'])->name('a
 Route::get('/apply/success/{referenceCode}', [ApplicantApplicationController::class, 'success'])->name('applicant.apply.success');
 Route::view('/address-demo', 'applicant.address-demo')->name('applicant.address-demo');
 
-Route::get('/track', function () {
-    return view('applicant.track');
-})->name('applicant.track');
+Route::get('/track', [ApplicantTrackingController::class, 'index'])->name('applicant.track');
+Route::post('/track/access', [ApplicantTrackingController::class, 'access'])->name('applicant.track.access');
+Route::get('/track/application', [ApplicantTrackingController::class, 'show'])->name('applicant.track.application');
+Route::post('/track/application/resubmit', [ApplicantTrackingController::class, 'resubmit'])->name('applicant.track.resubmit');
 
 Route::get('/staff-login', fn () => redirect()->to('/login'))->name('staff.login');
 

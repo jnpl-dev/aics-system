@@ -76,7 +76,7 @@ class FilamentAicsStaffApplicationsTest extends TestCase
     public function test_active_aics_staff_can_access_filament_applications_index(): void
     {
         $this->seedTestApplication('REF-PENDING-001', 'submitted');
-        $this->seedTestApplication('REF-FORWARDED-001', 'forwarded_to_mswd');
+    $this->seedTestApplication('REF-FORWARDED-001', 'forwarded_to_mswdo');
 
         $staff = User::query()->create([
             'first_name' => 'Aics',
@@ -125,7 +125,7 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
     public function test_active_aics_staff_can_open_view_page_for_forwarded_application(): void
     {
-        $applicationId = $this->seedTestApplication('REF-VIEW-001', 'forwarded_to_mswd');
+    $applicationId = $this->seedTestApplication('REF-VIEW-001', 'forwarded_to_mswdo');
         $this->seedTestDocument($applicationId, 'forwarded_document.pdf');
 
         $staff = User::query()->create([

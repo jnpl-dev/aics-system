@@ -32,13 +32,13 @@ class ApplicationsTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'submitted', 'under_review' => 'primary',
-                        'pending_additional_docs', 'resubmission_required' => 'warning',
-                        'forwarded_to_mswd', 'forwarded_to_mayor', 'forwarded_to_accounting', 'forwarded_to_treasury' => 'success',
+                        'submitted', 'pending_assistance_code', 'pending_voucher', 'pending_cheque' => 'primary',
+                        'additional_docs_required', 'resubmission_required', 'code_adjustment_required', 'voucher_adjustment_required', 'cheque_on_hold' => 'warning',
+                        'forwarded_to_mswdo', 'forwarded_to_mayors_office', 'forwarded_to_accounting', 'cheque_ready' => 'success',
                         default => 'gray',
                     })
                     ->formatStateUsing(static fn (string $state): string => match ($state) {
-                        'pending_additional_docs' => 'Pending Resubmission of Docs',
+                        'additional_docs_required' => 'Additional Documents Required',
                         default => str($state)->replace('_', ' ')->title()->toString(),
                     })
                     ->sortable(),
@@ -144,18 +144,24 @@ class ApplicationsTable
 
     private static function isPendingStatus(string $status): bool
     {
-        return in_array($status, ['submitted', 'under_review'], true);
+        return in_array($status, ['submitted', 'resubmission_required'], true);
     }
 
     private static function isForwardedOrReturnedStatus(string $status): bool
     {
         return in_array($status, [
-            'forwarded_to_mswd',
-            'forwarded_to_mayor',
+            'forwarded_to_mswdo',
+            'forwarded_to_mayors_office',
             'forwarded_to_accounting',
-            'forwarded_to_treasury',
-            'pending_additional_docs',
+            'additional_docs_required',
             'resubmission_required',
+            'code_adjustment_required',
+            'voucher_adjustment_required',
+            'pending_assistance_code',
+            'pending_voucher',
+            'pending_cheque',
+            'cheque_on_hold',
+            'cheque_ready',
         ], true);
     }
 }
