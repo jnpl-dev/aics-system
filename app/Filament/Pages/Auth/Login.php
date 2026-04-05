@@ -25,6 +25,17 @@ class Login extends BaseLogin
 
     private const OTP_CHALLENGE_SESSION_KEY = 'filament_login_otp_challenge_id';
 
+    public function mount(): void
+    {
+        if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
+            $this->redirectRoute('login', navigate: true);
+
+            return;
+        }
+
+        parent::mount();
+    }
+
     public function getHeading(): string
     {
         return 'AICS Login';
@@ -59,27 +70,19 @@ class Login extends BaseLogin
             $this->throwFailureValidationException();
         }
 
-        $currentPanel = Filament::getCurrentOrDefaultPanel();
+        $accessiblePanel = $user instanceof FilamentUser
+            ? $this->resolveAccessiblePanel($user)
+            : null;
 
-        if ($user instanceof FilamentUser && (! $user->canAccessPanel($currentPanel))) {
-            $accessiblePanel = $this->resolveAccessiblePanel($user);
-
-            if ($accessiblePanel instanceof Panel) {
-                Notification::make()
-                    ->title('Use your assigned portal')
-                    ->body('Redirecting you to the correct login page for your account.')
-                    ->warning()
-                    ->send();
-
-                $this->redirect($accessiblePanel->getLoginUrl(), navigate: true);
-
-                return null;
-            }
-
+        if (! $accessiblePanel instanceof Panel) {
             $this->throwFailureValidationException();
         }
 
-        $challengeId = $this->startOtpChallenge($user, (bool) ($data['remember'] ?? false));
+        $challengeId = $this->startOtpChallenge(
+            $user,
+            (bool) ($data['remember'] ?? false),
+            $accessiblePanel->getId(),
+        );
 
         if (blank($challengeId)) {
             throw ValidationException::withMessages([
@@ -89,12 +92,7 @@ class Login extends BaseLogin
 
         session()->put(self::OTP_CHALLENGE_SESSION_KEY, $challengeId);
 
-        $panelId = $currentPanel->getId();
-        $otpRouteName = $panelId === 'aics-staff'
-            ? 'filament.aics-staff.auth.otp'
-            : 'filament.auth.otp';
-
-        $this->redirectRoute($otpRouteName, navigate: true);
+        $this->redirectRoute('filament.auth.otp', navigate: true);
 
         Notification::make()
             ->title('Verification started')
@@ -151,11 +149,11 @@ class Login extends BaseLogin
         ]);
     }
 
-    protected function startOtpChallenge(Authenticatable $user, bool $remember): ?string
+    protected function startOtpChallenge(Authenticatable $user, bool $remember, string $targetPanelId): ?string
     {
         $email = (string) ($user->email ?? '');
 
-        if ($email === '') {
+        if ($email === '' || trim($targetPanelId) === '') {
             return null;
         }
 
@@ -170,6 +168,7 @@ class Login extends BaseLogin
                 'otp_sent' => false,
                 'attempts' => 0,
                 'remember' => $remember,
+                'target_panel_id' => $targetPanelId,
             ],
             now()->addMinutes(self::OTP_TTL_MINUTES)
         );

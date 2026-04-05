@@ -20,6 +20,31 @@
         @endif
     </head>
     <body class="min-h-screen bg-[#FFFDFF] text-[#176334] flex items-center justify-center p-6">
+        @php
+            $staffCtaHref = route('staff.login');
+            $staffCtaLabel = 'Staff Login';
+
+            $user = auth()->user();
+            $dashboardUrl = null;
+
+            if ($user instanceof \Filament\Models\Contracts\FilamentUser) {
+                foreach (\Filament\Facades\Filament::getPanels() as $panel) {
+                    if (! $user->canAccessPanel($panel)) {
+                        continue;
+                    }
+
+                    $panelPath = trim((string) $panel->getPath(), '/');
+                    $dashboardUrl = $panelPath === '' ? url('/') : url('/'.$panelPath);
+                    break;
+                }
+            }
+
+            if ($dashboardUrl !== null) {
+                $staffCtaHref = $dashboardUrl;
+                $staffCtaLabel = 'Return to Dashboard';
+            }
+        @endphp
+
         <main class="w-full max-w-3xl rounded-2xl border border-[#176334]/20 bg-white shadow-lg p-8 md:p-12">
             <div class="text-center mb-10">
                 <h1 class="text-3xl md:text-4xl font-semibold tracking-tight mb-3">AICS Service Directory</h1>
@@ -28,10 +53,10 @@
 
             <div class="grid gap-4 md:grid-cols-3">
                 <a
-                    href="{{ url('/aics-staff/login') }}"
+                    href="{{ $staffCtaHref }}"
                     class="inline-flex items-center justify-center rounded-lg bg-[#176334] px-5 py-4 text-white font-medium hover:opacity-90 transition"
                 >
-                    Staff Login
+                    {{ $staffCtaLabel }}
                 </a>
 
                 <a

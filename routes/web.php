@@ -20,18 +20,19 @@ Route::get('/track', function () {
     return view('applicant.track');
 })->name('applicant.track');
 
+Route::get('/staff-login', fn () => redirect()->to('/login'))->name('staff.login');
+
 Route::middleware('guest')->get('/login', Login::class)
     ->middleware(SetUpPanel::class . ':admin')
     ->name('login');
+
+Route::middleware('guest')->get('/admin/login', fn () => redirect()->route('login'));
+Route::middleware('guest')->get('/aics-staff/login', fn () => redirect()->route('login'));
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/otp', OtpChallenge::class)
         ->middleware(SetUpPanel::class . ':admin')
         ->name('filament.auth.otp');
-
-    Route::get('/aics-staff/otp', OtpChallenge::class)
-        ->middleware(SetUpPanel::class . ':aics-staff')
-        ->name('filament.aics-staff.auth.otp');
 });
 
 Route::post('/auth/login-attempt', [AuthIntegrationController::class, 'logLoginAttempt'])->name('auth.login-attempt');

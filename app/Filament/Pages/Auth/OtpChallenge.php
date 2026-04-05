@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Notifications\Notification;
+use Filament\Panel;
 use Filament\Pages\SimplePage;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
@@ -44,6 +45,12 @@ class OtpChallenge extends SimplePage
 
     public function mount(): void
     {
+        if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
+            redirect()->route('filament.auth.otp');
+
+            return;
+        }
+
         if (Filament::auth()->check()) {
             redirect()->to($this->getPanelHomeUrl());
 
@@ -181,7 +188,17 @@ class OtpChallenge extends SimplePage
             ]);
         }
 
-        if ($user instanceof FilamentUser && (! $user->canAccessPanel(Filament::getCurrentOrDefaultPanel()))) {
+        $targetPanel = $this->resolveTargetPanelFromPayload($payload);
+
+        if (! $targetPanel instanceof Panel) {
+            $this->clearChallenge($challengeId);
+
+            return redirect()->to(route('login'))->withErrors([
+                'email' => 'Unable to determine your access portal. Please sign in again.',
+            ]);
+        }
+
+        if ($user instanceof FilamentUser && (! $user->canAccessPanel($targetPanel))) {
             $this->clearChallenge($challengeId);
 
             return redirect()->to($this->getPanelLoginUrl())->withErrors([
@@ -207,7 +224,7 @@ class OtpChallenge extends SimplePage
             ->success()
             ->send();
 
-        return redirect()->to($this->getPanelHomeUrl());
+        return redirect()->to($targetPanel->getUrl());
     }
 
     public function resendOtp(): void
@@ -353,12 +370,60 @@ class OtpChallenge extends SimplePage
 
     private function getPanelLoginUrl(): string
     {
-        return Filament::getCurrentOrDefaultPanel()->getLoginUrl() ?? route('login');
+        return route('login');
     }
 
     private function getPanelHomeUrl(): string
     {
+        $user = Filament::auth()->user();
+
+        if ($user instanceof FilamentUser) {
+            $panel = $this->resolveAccessiblePanel($user);
+
+            if ($panel instanceof Panel) {
+                return $panel->getUrl();
+            }
+        }
+
         return Filament::getCurrentOrDefaultPanel()->getUrl();
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function resolveTargetPanelFromPayload(array $payload): ?Panel
+    {
+        $targetPanelId = is_string($payload['target_panel_id'] ?? null)
+            ? trim((string) $payload['target_panel_id'])
+            : '';
+
+        if ($targetPanelId === '') {
+            return Filament::getCurrentOrDefaultPanel();
+        }
+
+        foreach (Filament::getPanels() as $panel) {
+            if ($this->normalizePanelId($panel->getId()) === $this->normalizePanelId($targetPanelId)) {
+                return $panel;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveAccessiblePanel(FilamentUser $user): ?Panel
+    {
+        foreach (Filament::getPanels() as $panel) {
+            if ($user->canAccessPanel($panel)) {
+                return $panel;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizePanelId(string $panelId): string
+    {
+        return str_replace(['-', '_'], '', strtolower(trim($panelId)));
     }
 
     public function updatedOtpDigits(mixed $value, ?string $key = null): void
