@@ -340,7 +340,7 @@
                         </div>
                     </div>
 
-                    <p class="mt-4 text-xs/5 text-[#176334]/75">Allowed formats: PDF, JPG, JPEG, PNG. Max size: 5MB per file.</p>
+                    <p class="mt-4 text-xs/5 text-[#176334]/75">Allowed formats: JPG or JPEG images only. Max size: 1MB per file. Uploaded images are converted to PDF automatically.</p>
                 </section>
             </div>
 
@@ -350,7 +350,13 @@
                 <div class="flex items-center gap-2">
                     <button type="button" id="btn-prev" class="hidden rounded-md border border-[#176334]/30 bg-white px-3 py-2 text-sm font-semibold text-[#176334] hover:bg-[#176334]/5">Previous</button>
                     <button type="button" id="btn-next" class="rounded-md bg-[#176334] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02]">Next</button>
-                    <button type="button" id="btn-final" class="hidden rounded-md bg-[#6C9C02] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02]">Submit Application</button>
+                    <button type="button" id="btn-final" class="hidden inline-flex items-center gap-2 rounded-md bg-[#6C9C02] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6C9C02] disabled:cursor-not-allowed disabled:opacity-70">
+                        <svg id="btn-final-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                        </svg>
+                        <span id="btn-final-label">Submit Application</span>
+                    </button>
                 </div>
             </div>
         </form>
@@ -372,11 +378,28 @@
             const btnFinal = document.getElementById('btn-final');
             const selectedAssistanceInput = document.getElementById('selected-assistance');
             const selectedAssistanceDisplay = document.getElementById('selected-assistance-display');
+            const btnFinalSpinner = document.getElementById('btn-final-spinner');
+            const btnFinalLabel = document.getElementById('btn-final-label');
             const initialCategory = @json($initialCategory);
             const relationshipSelect = document.getElementById('relationship-to-beneficiary');
             const requirementUploadGroups = Array.from(document.querySelectorAll('.requirement-upload-group'));
             const authorizationLetterFields = Array.from(document.querySelectorAll('.authorization-letter-field'));
             const phoneInputs = Array.from(document.querySelectorAll('[data-numeric-phone="true"]'));
+            let isSubmitting = false;
+
+            function setSubmittingState(value) {
+                isSubmitting = value;
+
+                btnFinal.disabled = value;
+                btnNext.disabled = value;
+                btnPrev.disabled = value;
+
+                btnFinalSpinner?.classList.toggle('hidden', !value);
+
+                if (btnFinalLabel) {
+                    btnFinalLabel.textContent = value ? 'Submitting...' : 'Submit Application';
+                }
+            }
 
             function enforcePhoneDigits(input) {
                 input.value = input.value.replace(/\D+/g, '').slice(0, 11);
@@ -494,11 +517,22 @@
             });
 
             btnFinal.addEventListener('click', () => {
+                if (isSubmitting) {
+                    return;
+                }
+
                 if (!validateCurrentStep()) {
                     return;
                 }
 
+                setSubmittingState(true);
                 form.requestSubmit();
+            });
+
+            form.addEventListener('submit', () => {
+                if (!isSubmitting) {
+                    setSubmittingState(true);
+                }
             });
 
             if (initialCategory) {

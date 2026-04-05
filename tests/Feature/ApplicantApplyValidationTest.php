@@ -2,11 +2,20 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ApplicantApplyValidationTest extends TestCase
 {
+    use RefreshDatabase;
+
+    private function fakeImageUpload(string $name): UploadedFile
+    {
+        return UploadedFile::fake()->create($name, 100, 'image/jpeg');
+    }
+
     public function test_apply_submission_requires_mandatory_fields(): void
     {
         $response = $this->post(route('applicant.apply.store'), []);
@@ -16,14 +25,12 @@ class ApplicantApplyValidationTest extends TestCase
                 'category_name',
                 'applicant.last_name',
                 'applicant.first_name',
-                'applicant.middle_name',
                 'applicant.sex',
                 'applicant.date_of_birth',
                 'applicant.phone_number',
                 'applicant.address',
                 'beneficiary.last_name',
                 'beneficiary.first_name',
-                'beneficiary.middle_name',
                 'beneficiary.sex',
                 'beneficiary.date_of_birth',
                 'beneficiary.relationship',
@@ -36,6 +43,8 @@ class ApplicantApplyValidationTest extends TestCase
 
     public function test_apply_submission_accepts_valid_medical_representative_payload(): void
     {
+        Storage::fake('supabase');
+
         $response = $this->post(route('applicant.apply.store'), [
             'category_name' => 'Medical Assistance',
             'applicant' => [
@@ -57,19 +66,39 @@ class ApplicantApplyValidationTest extends TestCase
                 'address' => ' Sitio Proper, Barangay Sample ',
             ],
             'requirements' => [
-                'medical_certificate' => UploadedFile::fake()->create('medical-certificate.pdf', 100, 'application/pdf'),
-                'prescription' => UploadedFile::fake()->create('prescription.pdf', 100, 'application/pdf'),
-                'applicant_government_id' => UploadedFile::fake()->create('applicant-id.pdf', 100, 'application/pdf'),
-                'beneficiary_government_id' => UploadedFile::fake()->create('beneficiary-id.pdf', 100, 'application/pdf'),
-                'applicant_cedula' => UploadedFile::fake()->create('cedula.pdf', 100, 'application/pdf'),
-                'barangay_indigency' => UploadedFile::fake()->create('indigency.pdf', 100, 'application/pdf'),
-                'authorization_letter' => UploadedFile::fake()->create('authorization.pdf', 100, 'application/pdf'),
+                'medical_certificate' => $this->fakeImageUpload('medical-certificate.jpg'),
+                'prescription' => $this->fakeImageUpload('prescription.jpg'),
+                'applicant_government_id' => $this->fakeImageUpload('applicant-id.jpg'),
+                'beneficiary_government_id' => $this->fakeImageUpload('beneficiary-id.jpg'),
+                'applicant_cedula' => $this->fakeImageUpload('cedula.jpg'),
+                'barangay_indigency' => $this->fakeImageUpload('indigency.jpg'),
+                'authorization_letter' => $this->fakeImageUpload('authorization.jpg'),
             ],
         ]);
 
         $response
-            ->assertRedirect(route('applicant.apply'))
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('status');
+            ->assertSessionMissing('status');
+
+        $this->assertDatabaseCount('application', 1);
+        $this->assertDatabaseCount('document', 7);
+
+        $application = \App\Models\Application::query()->firstOrFail();
+
+        $this->assertSame('submitted', $application->status);
+        $this->assertNotEmpty($application->reference_code);
+        $this->assertSame('09171234567', $application->applicant_phone);
+
+    $response->assertRedirect(route('applicant.apply.success', ['referenceCode' => $application->reference_code]));
+
+        $storedDocuments = \App\Models\Document::query()->where('application_id', $application->application_id)->get();
+
+        foreach ($storedDocuments as $document) {
+            $this->assertNotEmpty($document->file_path);
+            $this->assertStringEndsWith('.pdf', strtolower($document->file_path));
+            $this->assertSame('application/pdf', $document->mime_type);
+            $this->assertStringEndsWith('.pdf', strtolower($document->file_name));
+            Storage::disk('supabase')->assertExists($document->file_path);
+        }
     }
 }

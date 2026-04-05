@@ -13,6 +13,7 @@ Route::get('/', function () {
 
 Route::get('/apply', [ApplicantApplicationController::class, 'create'])->name('applicant.apply');
 Route::post('/apply', [ApplicantApplicationController::class, 'store'])->name('applicant.apply.store');
+Route::get('/apply/success/{referenceCode}', [ApplicantApplicationController::class, 'success'])->name('applicant.apply.success');
 Route::view('/address-demo', 'applicant.address-demo')->name('applicant.address-demo');
 
 Route::get('/track', function () {

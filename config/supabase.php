@@ -8,4 +8,9 @@ return [
     'jwt_issuer' => env('SUPABASE_JWT_ISSUER'),
     'jwks_url' => env('SUPABASE_JWKS_URL'),
     'auth_user_endpoint' => env('SUPABASE_AUTH_USER_ENDPOINT', '/auth/v1/user'),
+    'storage_disk' => env('SUPABASE_STORAGE_DISK', 'supabase'),
+    'storage_bucket' => env('SUPABASE_STORAGE_BUCKET', 'aics-documents'),
+    'storage_paths' => [
+        'applicant_documents' => env('SUPABASE_STORAGE_APPLICANT_DOCUMENTS_PATH', 'applications'),
+    ],
 ];

@@ -42,6 +42,36 @@
     - `/track` (tracking placeholder)
     - `/address-demo` (standalone PH address selector component demo)
 - Applicant apply form now posts to backend validation endpoint (`POST /apply`) and relies on server-side Laravel validation/sanitization.
+- Applicant submit flow now persists to DB (`application` + `document`) and stores uploaded files in Supabase bucket via Laravel filesystem disk.
+- Current accepted upload types are JPG/JPEG images only (1MB max per file), and uploads are converted server-side to PDF before storage.
+
+### Future document-intake enhancement direction (planned)
+
+- Camera capture-first intake for clearer mobile submission UX
+- Edge detection/scanning and automatic crop/deskew
+- Text-focused document enhancement prior to conversion
+- Maintain existing storage contract: final generated PDF saved to Supabase, with PDF metadata/path persisted in DB
+
+### Supabase bucket setup (required for applicant document uploads)
+
+1. Create a bucket in Supabase Storage (recommended name: `aics-documents`).
+2. Ensure server-side credentials are configured for the Laravel `supabase` filesystem disk.
+3. Set environment values:
+    - `SUPABASE_STORAGE_DISK=supabase`
+    - `SUPABASE_STORAGE_BUCKET=aics-documents`
+    - `SUPABASE_STORAGE_APPLICANT_DOCUMENTS_PATH=applications`
+    - `SUPABASE_STORAGE_ENDPOINT=<your-s3-compatible-endpoint>`
+    - `SUPABASE_STORAGE_ACCESS_KEY_ID=<key-id>`
+    - `SUPABASE_STORAGE_SECRET_ACCESS_KEY=<secret>`
+    - `SUPABASE_STORAGE_REGION=<region>`
+    - `SUPABASE_STORAGE_USE_PATH_STYLE_ENDPOINT=true`
+4. Keep credentials server-side only (`.env`), never expose secrets in client code.
+
+Stored `document.file_path` format:
+
+- `applications/<reference_code>/<timestamp>_<requirement_key>.<ext>`
+
+These paths are what the app persists in the `document` table for later retrieval.
 
 ### Reusable public form components
 

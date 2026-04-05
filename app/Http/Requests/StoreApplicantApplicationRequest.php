@@ -26,26 +26,26 @@ class StoreApplicantApplicationRequest extends FormRequest
         $allowedSexes = ['Male', 'Female'];
         $allowedRelationships = ['Self', 'Parent', 'Sibling', 'Spouse', 'Child', 'Representative'];
 
-    $documentRule = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+    $documentRule = ['file', 'mimes:jpg,jpeg', 'max:1024'];
 
         return [
             'category_name' => ['required', Rule::in($allowedCategories)],
 
             'applicant.last_name' => ['required', 'string', 'max:120'],
             'applicant.first_name' => ['required', 'string', 'max:120'],
-            'applicant.middle_name' => ['required', 'string', 'max:120'],
+            'applicant.middle_name' => ['nullable', 'string', 'max:120'],
             'applicant.sex' => ['required', Rule::in($allowedSexes)],
             'applicant.date_of_birth' => ['required', 'date', 'before:today'],
             'applicant.phone_number' => ['required', 'regex:/^09\d{9}$/'],
-            'applicant.address' => ['required', 'string', 'max:255'],
+            'applicant.address' => ['required', 'string', 'max:500'],
 
             'beneficiary.last_name' => ['required', 'string', 'max:120'],
             'beneficiary.first_name' => ['required', 'string', 'max:120'],
-            'beneficiary.middle_name' => ['required', 'string', 'max:120'],
+            'beneficiary.middle_name' => ['nullable', 'string', 'max:120'],
             'beneficiary.sex' => ['required', Rule::in($allowedSexes)],
             'beneficiary.date_of_birth' => ['required', 'date', 'before:today'],
             'beneficiary.relationship' => ['required', Rule::in($allowedRelationships)],
-            'beneficiary.address' => ['required', 'string', 'max:255'],
+            'beneficiary.address' => ['required', 'string', 'max:500'],
 
             'requirements.medical_certificate' => [Rule::requiredIf($this->input('category_name') === 'Medical Assistance'), ...$documentRule],
             'requirements.hospital_bill' => [Rule::requiredIf($this->input('category_name') === 'Hospital Assistance'), ...$documentRule],
@@ -68,8 +68,8 @@ class StoreApplicantApplicationRequest extends FormRequest
     {
         return [
             'applicant.phone_number.regex' => 'Applicant phone number must be a valid Philippine mobile number (09XXXXXXXXX).',
-            'requirements.*.mimes' => 'Uploaded documents must be PDF, JPG, JPEG, or PNG.',
-            'requirements.*.max' => 'Each uploaded document must not exceed 5MB.',
+            'requirements.*.mimes' => 'Uploaded documents must be JPG or JPEG images only.',
+            'requirements.*.max' => 'Each uploaded document must not exceed 1MB.',
         ];
     }
 

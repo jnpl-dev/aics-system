@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -10,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('user')) {
+            return;
+        }
+
         DB::statement("\n            UPDATE user\n            SET role = 'mayor_office_staff'\n            WHERE role = 'mayors_office'\n        ");
 
         DB::statement("\n            ALTER TABLE user\n            MODIFY role ENUM(\n                'aics_staff',\n                'mswd_officer',\n                'mayor_office_staff',\n                'accountant',\n                'treasurer',\n                'admin',\n                'system_admin'\n            ) NOT NULL\n        ");
@@ -20,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('user')) {
+            return;
+        }
+
         DB::statement("\n            UPDATE user\n            SET role = 'mayors_office'\n            WHERE role = 'mayor_office_staff'\n        ");
 
         DB::statement("\n            ALTER TABLE user\n            MODIFY role ENUM(\n                'aics_staff',\n                'mswd_officer',\n                'mayors_office',\n                'accountant',\n                'treasurer',\n                'admin'\n            ) NOT NULL\n        ");
