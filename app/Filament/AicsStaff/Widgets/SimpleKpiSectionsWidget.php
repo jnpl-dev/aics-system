@@ -7,6 +7,8 @@ use Filament\Widgets\Widget;
 
 class SimpleKpiSectionsWidget extends Widget
 {
+    protected static bool $isLazy = false;
+
     protected string $view = 'filament.aics-staff.widgets.simple-kpi-sections-widget';
 
     protected int | string | array $columnSpan = 'full';

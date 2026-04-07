@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Applications\Pages;
 
+use App\Filament\Exports\ApplicationsExporter;
 use App\Filament\Resources\Applications\ApplicationResource;
 use App\Models\Application;
+use Filament\Actions\ExportAction;
+use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +17,15 @@ class ListApplications extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            ExportAction::make('exportApplications')
+                ->label('Export')
+                ->exporter(ApplicationsExporter::class)
+                ->formats([
+                    ExportFormat::Csv,
+                    ExportFormat::Xlsx,
+                ]),
+        ];
     }
 
     /**

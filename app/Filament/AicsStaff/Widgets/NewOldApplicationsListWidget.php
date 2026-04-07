@@ -7,6 +7,8 @@ use Filament\Widgets\Widget;
 
 class NewOldApplicationsListWidget extends Widget
 {
+    protected static bool $isLazy = false;
+
     protected string $view = 'filament.aics-staff.widgets.new-old-applications-list-widget';
 
     protected int | string | array $columnSpan = 'full';

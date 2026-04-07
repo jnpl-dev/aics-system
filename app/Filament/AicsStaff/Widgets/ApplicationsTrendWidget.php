@@ -7,6 +7,8 @@ use Filament\Widgets\Widget;
 
 class ApplicationsTrendWidget extends Widget
 {
+    protected static bool $isLazy = false;
+
     protected string $view = 'filament.aics-staff.widgets.applications-trend-widget';
 
     protected int | string | array $columnSpan = 'full';

@@ -10,6 +10,20 @@ use Tests\TestCase;
 
 class FilamentOtpChallengeTest extends TestCase
 {
+    public function test_otp_page_redirects_to_login_when_challenge_is_missing(): void
+    {
+        session()->forget('filament_login_otp_challenge_id');
+
+        $response = $this->get('/otp');
+
+        $response
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('filament_auth_error', [
+                'field' => 'data.email',
+                'message' => 'OTP session expired. Please sign in again.',
+            ]);
+    }
+
     public function test_updated_otp_digits_handles_null_key_without_crashing(): void
     {
         $challengeId = 'test-otp-challenge-id';

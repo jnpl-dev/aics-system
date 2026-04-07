@@ -22,6 +22,8 @@ class OtpChallenge extends SimplePage
 
     private const OTP_CHALLENGE_SESSION_KEY = 'filament_login_otp_challenge_id';
 
+    private const AUTH_ERROR_SESSION_KEY = 'filament_auth_error';
+
     private const EVENT_OTP_GENERATED_SENT = 'OTP_GENERATED_SENT';
 
     private const EVENT_OTP_RESEND = 'OTP_RESEND';
@@ -46,13 +48,13 @@ class OtpChallenge extends SimplePage
     public function mount(): void
     {
         if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
-            redirect()->route('filament.auth.otp');
+            $this->redirectRoute('filament.auth.otp', navigate: true);
 
             return;
         }
 
         if (Filament::auth()->check()) {
-            redirect()->to($this->getPanelHomeUrl());
+            $this->redirect($this->getPanelHomeUrl(), navigate: true);
 
             return;
         }
@@ -62,9 +64,10 @@ class OtpChallenge extends SimplePage
         if (blank($challengeId) || ! is_array(Cache::get($this->otpCacheKey($challengeId)))) {
             $this->clearChallenge((string) $challengeId);
 
-            redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'otp_code' => 'OTP session expired. Please sign in again.',
-            ]);
+            $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'OTP session expired. Please sign in again.'
+            );
 
             return;
         }
@@ -104,9 +107,10 @@ class OtpChallenge extends SimplePage
                 'reason' => 'challenge_missing_from_session',
             ]);
 
-            return redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'otp_code' => 'OTP session expired. Please sign in again.',
-            ]);
+            return $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'OTP session expired. Please sign in again.'
+            );
         }
 
         $payload = Cache::get($this->otpCacheKey($challengeId));
@@ -119,9 +123,10 @@ class OtpChallenge extends SimplePage
                 'otp_session_id' => $challengeId,
             ]);
 
-            return redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'otp_code' => 'OTP session expired. Please sign in again.',
-            ]);
+            return $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'OTP session expired. Please sign in again.'
+            );
         }
 
         $payloadUserId = $this->payloadUserId($payload);
@@ -149,9 +154,10 @@ class OtpChallenge extends SimplePage
                 'attempts' => $attempts,
             ]);
 
-            return redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'otp_code' => 'Maximum OTP attempts exceeded. Please sign in again.',
-            ]);
+            return $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'Maximum OTP attempts exceeded. Please sign in again.'
+            );
         }
 
         if (! Hash::check((string) $otpCode, (string) ($payload['code_hash'] ?? ''))) {
@@ -183,9 +189,10 @@ class OtpChallenge extends SimplePage
         if (! $user instanceof Authenticatable) {
             $this->clearChallenge($challengeId);
 
-            return redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'email' => 'These credentials do not match an active account.',
-            ]);
+            return $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'These credentials do not match an active account.'
+            );
         }
 
         $targetPanel = $this->resolveTargetPanelFromPayload($payload);
@@ -193,17 +200,19 @@ class OtpChallenge extends SimplePage
         if (! $targetPanel instanceof Panel) {
             $this->clearChallenge($challengeId);
 
-            return redirect()->to(route('login'))->withErrors([
-                'email' => 'Unable to determine your access portal. Please sign in again.',
-            ]);
+            return $this->redirectToUrlWithError(
+                route('login'),
+                'Unable to determine your access portal. Please sign in again.'
+            );
         }
 
         if ($user instanceof FilamentUser && (! $user->canAccessPanel($targetPanel))) {
             $this->clearChallenge($challengeId);
 
-            return redirect()->to($this->getPanelLoginUrl())->withErrors([
-                'email' => 'These credentials do not match an active account.',
-            ]);
+            return $this->redirectToUrlWithError(
+                $this->getPanelLoginUrl(),
+                'These credentials do not match an active account.'
+            );
         }
 
         $remember = (bool) ($payload['remember'] ?? false);
@@ -224,7 +233,7 @@ class OtpChallenge extends SimplePage
             ->success()
             ->send();
 
-        return redirect()->to($targetPanel->getUrl());
+        return $this->redirect($targetPanel->getUrl(), navigate: true);
     }
 
     public function resendOtp(): void
@@ -365,7 +374,7 @@ class OtpChallenge extends SimplePage
     {
         $this->clearChallenge((string) $this->getChallengeIdFromSession());
 
-        return redirect()->to($this->getPanelLoginUrl());
+        return $this->redirect($this->getPanelLoginUrl(), navigate: true);
     }
 
     private function getPanelLoginUrl(): string
@@ -468,6 +477,16 @@ class OtpChallenge extends SimplePage
     private function otpCacheKey(string $challengeId): string
     {
         return "filament-login-otp:{$challengeId}";
+    }
+
+    private function redirectToUrlWithError(string $url, string $message, string $field = 'data.email'): mixed
+    {
+        session()->flash(self::AUTH_ERROR_SESSION_KEY, [
+            'field' => $field,
+            'message' => $message,
+        ]);
+
+        return $this->redirect($url, navigate: true);
     }
 
     private function sendOtpEmail(string $email, string $otpCode): bool

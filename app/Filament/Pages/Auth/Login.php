@@ -25,6 +25,8 @@ class Login extends BaseLogin
 
     private const OTP_CHALLENGE_SESSION_KEY = 'filament_login_otp_challenge_id';
 
+    private const AUTH_ERROR_SESSION_KEY = 'filament_auth_error';
+
     public function mount(): void
     {
         if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
@@ -34,6 +36,21 @@ class Login extends BaseLogin
         }
 
         parent::mount();
+
+        $authError = session(self::AUTH_ERROR_SESSION_KEY);
+
+        if (is_array($authError)) {
+            $field = is_string($authError['field'] ?? null) && $authError['field'] !== ''
+                ? (string) $authError['field']
+                : 'data.email';
+            $message = is_string($authError['message'] ?? null)
+                ? trim((string) $authError['message'])
+                : '';
+
+            if ($message !== '') {
+                $this->addError($field, $message);
+            }
+        }
     }
 
     public function getHeading(): string

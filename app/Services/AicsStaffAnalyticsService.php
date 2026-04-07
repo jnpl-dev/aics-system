@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Schema;
 
 class AicsStaffAnalyticsService
 {
+    private const DASHBOARD_CACHE_TTL_SECONDS = 60;
+
     /**
      * @return array{applications:array<string,int>,assistance_code:array<string,int>,new_pending:int,old_pending:int}
      */
@@ -64,9 +66,13 @@ class AicsStaffAnalyticsService
 
     public function getStatusCount(string $status): int
     {
-        return (int) DB::table('application')
-            ->where('status', $status)
-            ->count();
+        return (int) Cache::remember(
+            'aics_staff:analytics:status_count:' . $status,
+            now()->addSeconds(self::DASHBOARD_CACHE_TTL_SECONDS),
+            static fn (): int => (int) DB::table('application')
+                ->where('status', $status)
+                ->count()
+        );
     }
 
     public function getNewPendingCount(): int
@@ -98,14 +104,20 @@ class AicsStaffAnalyticsService
      */
     public function getSimpleKpis(): array
     {
-        return [
-            'submitted' => $this->getStatusCount(ApplicationStatuses::SUBMITTED),
-            'forwarded' => $this->getStatusCount(ApplicationStatuses::FORWARDED_TO_MSWDO),
-            'returned' => $this->getStatusCount(ApplicationStatuses::RESUBMISSION_REQUIRED),
-            'pending_code' => $this->getStatusCount(ApplicationStatuses::PENDING_ASSISTANCE_CODE),
-            'forwarded_code' => $this->getStatusCount(ApplicationStatuses::FORWARDED_TO_MAYORS_OFFICE),
-            'returned_code' => $this->getStatusCount(ApplicationStatuses::CODE_ADJUSTMENT_REQUIRED),
-        ];
+        return Cache::remember(
+            'aics_staff:analytics:simple_kpis',
+            now()->addSeconds(self::DASHBOARD_CACHE_TTL_SECONDS),
+            function (): array {
+                return [
+                    'submitted' => $this->getStatusCount(ApplicationStatuses::SUBMITTED),
+                    'forwarded' => $this->getStatusCount(ApplicationStatuses::FORWARDED_TO_MSWDO),
+                    'returned' => $this->getStatusCount(ApplicationStatuses::RESUBMISSION_REQUIRED),
+                    'pending_code' => $this->getStatusCount(ApplicationStatuses::PENDING_ASSISTANCE_CODE),
+                    'forwarded_code' => $this->getStatusCount(ApplicationStatuses::FORWARDED_TO_MAYORS_OFFICE),
+                    'returned_code' => $this->getStatusCount(ApplicationStatuses::CODE_ADJUSTMENT_REQUIRED),
+                ];
+            }
+        );
     }
 
     /**
@@ -113,101 +125,113 @@ class AicsStaffAnalyticsService
      */
     public function getApplicationTrend(string $period = 'week'): array
     {
-        if (! Schema::hasTable('application')) {
-            return [
-                'labels' => [],
-                'values' => [],
-                'period' => $period,
-            ];
-        }
+        $cacheSuffix = match ($period) {
+            'year' => now()->format('Y'),
+            'month' => now()->format('Y-m'),
+            default => now()->startOfWeek()->toDateString(),
+        };
 
-        if ($period === 'year') {
-            $labels = [];
-            $values = [];
+        return Cache::remember(
+            'aics_staff:analytics:application_trend:' . $period . ':' . $cacheSuffix,
+            now()->addSeconds(self::DASHBOARD_CACHE_TTL_SECONDS),
+            function () use ($period): array {
+                if (! Schema::hasTable('application')) {
+                    return [
+                        'labels' => [],
+                        'values' => [],
+                        'period' => $period,
+                    ];
+                }
 
-            for ($month = 1; $month <= 12; $month++) {
-                $monthStart = now()->startOfYear()->month($month)->startOfMonth();
-                $monthEnd = $monthStart->copy()->endOfMonth();
+                if ($period === 'year') {
+                    $labels = [];
+                    $values = [];
 
-                $labels[] = $monthStart->format('M Y');
-                $values[] = (int) DB::table('application')
-                    ->whereBetween('submitted_at', [$monthStart, $monthEnd])
-                    ->count();
+                    for ($month = 1; $month <= 12; $month++) {
+                        $monthStart = now()->startOfYear()->month($month)->startOfMonth();
+                        $monthEnd = $monthStart->copy()->endOfMonth();
+
+                        $labels[] = $monthStart->format('M Y');
+                        $values[] = (int) DB::table('application')
+                            ->whereBetween('submitted_at', [$monthStart, $monthEnd])
+                            ->count();
+                    }
+
+                    return [
+                        'labels' => $labels,
+                        'values' => $values,
+                        'period' => $period,
+                    ];
+                }
+
+                if ($period === 'month') {
+                    $monthStart = now()->startOfMonth();
+                    $monthEnd = now()->endOfMonth();
+
+                    $rows = DB::table('application')
+                        ->selectRaw('DATE(submitted_at) as day, COUNT(*) as count')
+                        ->whereBetween('submitted_at', [$monthStart, $monthEnd])
+                        ->groupByRaw('DATE(submitted_at)')
+                        ->orderByRaw('DATE(submitted_at)')
+                        ->get();
+
+                    $countsByDay = [];
+                    foreach ($rows as $row) {
+                        $countsByDay[(string) $row->day] = (int) $row->count;
+                    }
+
+                    $labels = [];
+                    $values = [];
+                    $cursor = $monthStart->copy();
+
+                    while ($cursor->lessThanOrEqualTo($monthEnd)) {
+                        $isoDate = $cursor->toDateString();
+                        $labels[] = $cursor->format('M d');
+                        $values[] = $countsByDay[$isoDate] ?? 0;
+                        $cursor->addDay();
+                    }
+
+                    return [
+                        'labels' => $labels,
+                        'values' => $values,
+                        'period' => $period,
+                    ];
+                }
+
+                $start = now()->startOfWeek()->startOfDay();
+                $end = now()->endOfWeek()->endOfDay();
+
+                $rows = DB::table('application')
+                    ->selectRaw('DATE(submitted_at) as day, COUNT(*) as count')
+                    ->whereBetween('submitted_at', [$start, $end])
+                    ->groupByRaw('DATE(submitted_at)')
+                    ->orderByRaw('DATE(submitted_at)')
+                    ->get();
+
+                $countsByDay = [];
+                foreach ($rows as $row) {
+                    $countsByDay[(string) $row->day] = (int) $row->count;
+                }
+
+                $labels = [];
+                $values = [];
+
+                $cursor = $start->copy();
+
+                while ($cursor->lessThanOrEqualTo($end)) {
+                    $isoDate = $cursor->toDateString();
+                    $labels[] = $cursor->format('D');
+                    $values[] = $countsByDay[$isoDate] ?? 0;
+                    $cursor->addDay();
+                }
+
+                return [
+                    'labels' => $labels,
+                    'values' => $values,
+                    'period' => $period,
+                ];
             }
-
-            return [
-                'labels' => $labels,
-                'values' => $values,
-                'period' => $period,
-            ];
-        }
-
-        if ($period === 'month') {
-            $monthStart = now()->startOfMonth();
-            $monthEnd = now()->endOfMonth();
-
-            $rows = DB::table('application')
-                ->selectRaw('DATE(submitted_at) as day, COUNT(*) as count')
-                ->whereBetween('submitted_at', [$monthStart, $monthEnd])
-                ->groupByRaw('DATE(submitted_at)')
-                ->orderByRaw('DATE(submitted_at)')
-                ->get();
-
-            $countsByDay = [];
-            foreach ($rows as $row) {
-                $countsByDay[(string) $row->day] = (int) $row->count;
-            }
-
-            $labels = [];
-            $values = [];
-            $cursor = $monthStart->copy();
-
-            while ($cursor->lessThanOrEqualTo($monthEnd)) {
-                $isoDate = $cursor->toDateString();
-                $labels[] = $cursor->format('M d');
-                $values[] = $countsByDay[$isoDate] ?? 0;
-                $cursor->addDay();
-            }
-
-            return [
-                'labels' => $labels,
-                'values' => $values,
-                'period' => $period,
-            ];
-        }
-
-        $start = now()->startOfWeek()->startOfDay();
-        $end = now()->endOfWeek()->endOfDay();
-
-        $rows = DB::table('application')
-            ->selectRaw('DATE(submitted_at) as day, COUNT(*) as count')
-            ->whereBetween('submitted_at', [$start, $end])
-            ->groupByRaw('DATE(submitted_at)')
-            ->orderByRaw('DATE(submitted_at)')
-            ->get();
-
-        $countsByDay = [];
-        foreach ($rows as $row) {
-            $countsByDay[(string) $row->day] = (int) $row->count;
-        }
-
-        $labels = [];
-        $values = [];
-
-        $cursor = $start->copy();
-
-        while ($cursor->lessThanOrEqualTo($end)) {
-            $isoDate = $cursor->toDateString();
-            $labels[] = $cursor->format('D');
-            $values[] = $countsByDay[$isoDate] ?? 0;
-            $cursor->addDay();
-        }
-
-        return [
-            'labels' => $labels,
-            'values' => $values,
-            'period' => $period,
-        ];
+        );
     }
 
     /**
@@ -215,49 +239,60 @@ class AicsStaffAnalyticsService
      */
     public function getPendingReviewList(string $queue = 'new', int $limit = 5): array
     {
-        if (! Schema::hasTable('application')) {
-            return [];
-        }
+        return Cache::remember(
+            sprintf(
+                'aics_staff:analytics:pending_list:%s:%d:%s',
+                $queue,
+                $limit,
+                now()->toDateString()
+            ),
+            now()->addSeconds(self::DASHBOARD_CACHE_TTL_SECONDS),
+            function () use ($queue, $limit): array {
+                if (! Schema::hasTable('application')) {
+                    return [];
+                }
 
-        $query = DB::table('application')
-            ->select([
-                'application_id',
-                'reference_code',
-                'applicant_last_name',
-                'applicant_first_name',
-                'status',
-                'submitted_at',
-            ])
-            ->whereIn('status', ApplicationStatuses::pendingReview());
+                $query = DB::table('application')
+                    ->select([
+                        'application_id',
+                        'reference_code',
+                        'applicant_last_name',
+                        'applicant_first_name',
+                        'status',
+                        'submitted_at',
+                    ])
+                    ->whereIn('status', ApplicationStatuses::pendingReview());
 
-        if ($queue === 'old') {
-            $query->whereDate('submitted_at', '<', now()->toDateString())
-                ->orderBy('submitted_at');
-        } else {
-            $query->whereDate('submitted_at', now()->toDateString())
-                ->orderByDesc('submitted_at');
-        }
+                if ($queue === 'old') {
+                    $query->whereDate('submitted_at', '<', now()->toDateString())
+                        ->orderBy('submitted_at');
+                } else {
+                    $query->whereDate('submitted_at', now()->toDateString())
+                        ->orderByDesc('submitted_at');
+                }
 
-        return $query
-            ->limit($limit)
-            ->get()
-            ->map(function (object $row): array {
-                $submittedAt = $row->submitted_at !== null
-                    ? now()->parse((string) $row->submitted_at)
-                    : now();
+                return $query
+                    ->limit($limit)
+                    ->get()
+                    ->map(function (object $row): array {
+                        $submittedAt = $row->submitted_at !== null
+                            ? now()->parse((string) $row->submitted_at)
+                            : now();
 
-                return [
-                    'application_id' => (int) $row->application_id,
-                    'reference_code' => (string) $row->reference_code,
-                    'applicant_name' => trim(((string) $row->applicant_last_name) . ', ' . ((string) $row->applicant_first_name)),
-                    'submitted_at' => $submittedAt->format('M d, Y h:i A'),
-                    'age_hours' => max($submittedAt->diffInHours(now()), 0),
-                    'status' => (string) $row->status,
-                    'status_label' => ApplicationStatuses::label((string) $row->status),
-                ];
-            })
-            ->values()
-            ->all();
+                        return [
+                            'application_id' => (int) $row->application_id,
+                            'reference_code' => (string) $row->reference_code,
+                            'applicant_name' => trim(((string) $row->applicant_last_name) . ', ' . ((string) $row->applicant_first_name)),
+                            'submitted_at' => $submittedAt->format('M d, Y h:i A'),
+                            'age_hours' => max($submittedAt->diffInHours(now()), 0),
+                            'status' => (string) $row->status,
+                            'status_label' => ApplicationStatuses::label((string) $row->status),
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        );
     }
 
     /**
