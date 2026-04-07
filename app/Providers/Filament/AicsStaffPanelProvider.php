@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\AicsStaff\Pages\Analytics;
 use App\Filament\AicsStaff\Pages\Dashboard;
 use App\Filament\Pages\Auth\Login;
 use App\Http\Middleware\AuthenticateFilament;
@@ -37,6 +38,7 @@ class AicsStaffPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->pages([
                 Dashboard::class,
+                Analytics::class,
             ])
             ->widgets([
                 AccountWidget::class,

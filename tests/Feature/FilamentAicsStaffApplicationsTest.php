@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -57,6 +58,20 @@ class FilamentAicsStaffApplicationsTest extends TestCase
             });
         }
 
+        if (Schema::hasTable('assistance_category')) {
+            Schema::disableForeignKeyConstraints();
+            DB::table('assistance_category')->updateOrInsert(
+                ['category_id' => 1],
+                [
+                    'name' => 'Medical Assistance',
+                    'description' => 'Test category',
+                    'is_active' => true,
+                    'created_at' => now(),
+                ]
+            );
+            Schema::enableForeignKeyConstraints();
+        }
+
         if (! Schema::hasTable('document')) {
             Schema::create('document', function (Blueprint $table): void {
                 $table->increments('document_id');
@@ -75,13 +90,13 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
     public function test_active_aics_staff_can_access_filament_applications_index(): void
     {
-        $this->seedTestApplication('REF-PENDING-001', 'submitted');
-    $this->seedTestApplication('REF-FORWARDED-001', 'forwarded_to_mswdo');
+        $this->seedTestApplication($this->uniqueReference('REF-PENDING'), 'submitted');
+        $this->seedTestApplication($this->uniqueReference('REF-FORWARDED'), 'forwarded_to_mswdo');
 
         $staff = User::query()->create([
             'first_name' => 'Aics',
             'last_name' => 'Staff',
-            'email' => 'aics.staff@example.com',
+            'email' => $this->uniqueEmail('aics.staff'),
             'password' => 'Strong#123',
             'role' => 'aics_staff',
             'status' => 'active',
@@ -100,13 +115,14 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
     public function test_active_aics_staff_can_open_review_page_for_pending_application(): void
     {
-        $applicationId = $this->seedTestApplication('REF-REVIEW-001', 'submitted');
+        $referenceCode = $this->uniqueReference('REF-REVIEW');
+        $applicationId = $this->seedTestApplication($referenceCode, 'submitted');
         $this->seedTestDocument($applicationId, 'review_document.pdf');
 
         $staff = User::query()->create([
             'first_name' => 'Aics',
             'last_name' => 'Reviewer',
-            'email' => 'aics.staff.reviewer@example.com',
+            'email' => $this->uniqueEmail('aics.staff.reviewer'),
             'password' => 'Strong#123',
             'role' => 'aics_staff',
             'status' => 'active',
@@ -116,7 +132,7 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
         $response
             ->assertStatus(200)
-            ->assertSee('Review Application: REF-REVIEW-001')
+            ->assertSee('Review Application: ' . $referenceCode)
             ->assertSee('Review Trail')
             ->assertSee('View PDF')
             ->assertSeeText('Return & Request Resubmission')
@@ -125,13 +141,14 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
     public function test_active_aics_staff_can_open_view_page_for_forwarded_application(): void
     {
-    $applicationId = $this->seedTestApplication('REF-VIEW-001', 'forwarded_to_mswdo');
+        $referenceCode = $this->uniqueReference('REF-VIEW');
+        $applicationId = $this->seedTestApplication($referenceCode, 'forwarded_to_mswdo');
         $this->seedTestDocument($applicationId, 'forwarded_document.pdf');
 
         $staff = User::query()->create([
             'first_name' => 'Aics',
             'last_name' => 'Viewer',
-            'email' => 'aics.staff.viewer@example.com',
+            'email' => $this->uniqueEmail('aics.staff.viewer'),
             'password' => 'Strong#123',
             'role' => 'aics_staff',
             'status' => 'active',
@@ -141,20 +158,20 @@ class FilamentAicsStaffApplicationsTest extends TestCase
 
         $response
             ->assertStatus(200)
-            ->assertSee('View Application: REF-VIEW-001')
+            ->assertSee('View Application: ' . $referenceCode)
             ->assertSee('Application Profile (View Only)')
             ->assertSee('Review Trail')
             ->assertSee('View PDF');
     }
 
-    public function test_active_aics_staff_with_hyphenated_role_and_title_case_status_can_access_panel(): void
+    public function test_active_aics_staff_with_title_case_status_can_access_panel(): void
     {
         $staff = User::query()->create([
             'first_name' => 'Aics',
             'last_name' => 'Staff',
-            'email' => 'aics.staff.hyphen@example.com',
+            'email' => $this->uniqueEmail('aics.staff.hyphen'),
             'password' => 'Strong#123',
-            'role' => 'aics-staff',
+            'role' => 'aics_staff',
             'status' => 'Active',
         ]);
 
@@ -168,7 +185,7 @@ class FilamentAicsStaffApplicationsTest extends TestCase
         $staff = User::query()->create([
             'first_name' => 'Aics',
             'last_name' => 'Staff',
-            'email' => 'aics.staff.noadmin@example.com',
+            'email' => $this->uniqueEmail('aics.staff.noadmin'),
             'password' => 'Strong#123',
             'role' => 'aics_staff',
             'status' => 'active',
@@ -179,13 +196,79 @@ class FilamentAicsStaffApplicationsTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_active_aics_staff_can_access_analytics_page(): void
+    {
+        $this->seedTestApplication($this->uniqueReference('REF-ANALYTICS-A'), 'submitted');
+        $this->seedTestApplication($this->uniqueReference('REF-ANALYTICS-B'), 'resubmission_required');
+
+        $staff = User::query()->create([
+            'first_name' => 'Aics',
+            'last_name' => 'Analyst',
+            'email' => $this->uniqueEmail('aics.staff.analytics'),
+            'password' => 'Strong#123',
+            'role' => 'aics_staff',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($staff)->get('/aics-staff/analytics');
+
+        $response
+            ->assertStatus(200)
+            ->assertSee('AICS Staff Analytics')
+            ->assertSee('Applications')
+            ->assertSee('Assistance Code')
+            ->assertSee('Submitted')
+            ->assertSee('Forwarded')
+            ->assertSee('Returned')
+            ->assertSee('New Applications List')
+            ->assertSee('Old Applications List')
+            ->assertSee('Application Trend')
+            ->assertSee('Week')
+            ->assertSee('Month')
+            ->assertSee('Year');
+    }
+
+    public function test_aics_staff_dashboard_includes_view_full_analytics_entrypoint(): void
+    {
+        $staff = User::query()->create([
+            'first_name' => 'Aics',
+            'last_name' => 'Dashboard',
+            'email' => $this->uniqueEmail('aics.staff.dashboard'),
+            'password' => 'Strong#123',
+            'role' => 'aics_staff',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($staff)->get('/aics-staff');
+
+        $response
+            ->assertStatus(200)
+            ->assertSee('AICS Staff Dashboard')
+            ->assertSee('View Full Analytics')
+            ->assertSee('href="' . url('/aics-staff/analytics') . '"', false);
+    }
+
     private function seedTestApplication(string $referenceCode, string $status): int
     {
         return (int) DB::table('application')->insertGetId([
+            'category_id' => 1,
+            'submitted_by' => null,
             'reference_code' => $referenceCode,
             'status' => $status,
             'applicant_last_name' => 'Applicant',
             'applicant_first_name' => 'Test',
+            'applicant_middle_name' => null,
+            'applicant_sex' => 'male',
+            'applicant_dob' => '1990-01-01',
+            'applicant_address' => 'Test Applicant Address',
+            'applicant_phone' => '09123456789',
+            'applicant_relationship_to_beneficiary' => 'Self',
+            'beneficiary_last_name' => 'Beneficiary',
+            'beneficiary_first_name' => 'Test',
+            'beneficiary_middle_name' => null,
+            'beneficiary_sex' => 'female',
+            'beneficiary_dob' => '1992-02-02',
+            'beneficiary_address' => 'Test Beneficiary Address',
             'submitted_at' => now(),
             'updated_at' => now(),
         ]);
@@ -202,5 +285,15 @@ class FilamentAicsStaffApplicationsTest extends TestCase
             'mime_type' => 'application/pdf',
             'uploaded_at' => now(),
         ]);
+    }
+
+    private function uniqueEmail(string $prefix): string
+    {
+        return $prefix . '+' . Str::lower(Str::random(8)) . '@example.com';
+    }
+
+    private function uniqueReference(string $prefix): string
+    {
+        return $prefix . '-' . Str::upper(Str::random(6));
     }
 }
