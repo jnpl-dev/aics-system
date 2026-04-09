@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Support\StaticUiOptionsCache;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -46,10 +47,7 @@ class UserForm
                     ->inline()
                     ->default('reset_password')
                     ->required(fn (string $operation): bool => $operation === 'edit')
-                    ->options([
-                        'reset_password' => 'Reset Password',
-                        'account_status' => 'Activate / Deactivate Account',
-                    ]),
+                    ->options(StaticUiOptionsCache::adminEditOperations()),
 
                 TextInput::make('password')
                     ->label(fn (string $operation): string => $operation === 'edit' ? 'Reset Password' : 'Password')
@@ -73,14 +71,7 @@ class UserForm
                     ->label('Role')
                     ->visible(fn (string $operation): bool => $operation === 'create')
                     ->required()
-                    ->options([
-                        'admin' => 'Admin',
-                        'aics_staff' => 'AICS Staff',
-                        'mswd_officer' => 'MSWD Officer',
-                        'mayor_office_staff' => 'Mayor Office Staff',
-                        'accountant' => 'Accountant',
-                        'treasurer' => 'Treasurer',
-                    ])
+                    ->options(StaticUiOptionsCache::adminUserRoles())
                     ->searchable(),
 
                 ToggleButtons::make('status')
@@ -89,10 +80,7 @@ class UserForm
                     ->inline()
                     ->default('active')
                     ->required(fn (string $operation, Get $get): bool => $operation === 'edit' && $get('edit_operation') === 'account_status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                    ]),
+                    ->options(StaticUiOptionsCache::adminUserStatuses()),
             ]);
     }
 }

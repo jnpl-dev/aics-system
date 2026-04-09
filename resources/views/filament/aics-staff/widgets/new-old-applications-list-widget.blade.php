@@ -1,8 +1,7 @@
 <x-filament-widgets::widget>
-    <x-filament::section>
-        <div class="grid gap-6 xl:grid-cols-2">
-            <section>
-                <h3 class="mb-3 text-base font-semibold text-gray-900">New Applications List</h3>
+    <div class="grid gap-6 xl:grid-cols-2">
+        <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="mb-3 text-base font-semibold text-gray-900">New Applications List</h2>
                 <div class="space-y-2">
                     @forelse ($this->getNewApplications() as $row)
                         <article class="rounded-lg border border-gray-100 p-3 text-sm">
@@ -17,10 +16,10 @@
                         <p class="text-sm text-gray-500">No new applications.</p>
                     @endforelse
                 </div>
-            </section>
+        </section>
 
-            <section>
-                <h3 class="mb-3 text-base font-semibold text-gray-900">Old Applications List</h3>
+        <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="mb-3 text-base font-semibold text-gray-900">Old Applications List</h2>
                 <div class="space-y-2">
                     @forelse ($this->getOldApplications() as $row)
                         <article class="rounded-lg border border-gray-100 p-3 text-sm">
@@ -35,7 +34,6 @@
                         <p class="text-sm text-gray-500">No old applications.</p>
                     @endforelse
                 </div>
-            </section>
-        </div>
-    </x-filament::section>
+        </section>
+    </div>
 </x-filament-widgets::widget>

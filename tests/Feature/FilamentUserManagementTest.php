@@ -32,7 +32,7 @@ class FilamentUserManagementTest extends TestCase
         $user = User::query()->create([
             'first_name' => 'Admin',
             'last_name' => 'User',
-            'email' => 'admin@example.com',
+            'email' => 'admin+' . uniqid() . '@example.com',
             'password' => 'Strong#123',
             'role' => 'admin',
             'status' => 'active',
@@ -50,7 +50,7 @@ class FilamentUserManagementTest extends TestCase
         $user = User::query()->create([
             'first_name' => 'Admin',
             'last_name' => 'User',
-            'email' => 'admin.create@example.com',
+            'email' => 'admin.create+' . uniqid() . '@example.com',
             'password' => 'Strong#123',
             'role' => 'admin',
             'status' => 'active',

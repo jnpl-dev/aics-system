@@ -14,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,8 @@ use Throwable;
 class ReviewApplication extends Page
 {
     use InteractsWithRecord;
+
+    private const ADMIN_MODAL_CACHE_TTL_SECONDS = 60;
 
     protected static string $resource = ApplicationResource::class;
 
@@ -279,19 +282,31 @@ class ReviewApplication extends Page
      */
     private function getDocumentCheckboxOptions(): array
     {
-        return $this->documents
-            ->mapWithKeys(static function (Document $document): array {
-                $label = (string) ($document->file_name ?? 'Document');
-                $requirement = filled($document->requirement?->name)
-                    ? (string) $document->requirement->name
-                    : 'No requirement assigned';
-                $uploadedAt = $document->uploaded_at?->format('M d, Y h:i A') ?? 'No timestamp';
+        $applicationId = (int) $this->getRecord()->application_id;
 
-                return [
-                    (int) $document->document_id => sprintf('%s (Requirement: %s) · %s', $label, $requirement, $uploadedAt),
-                ];
-            })
-            ->all();
+        return Cache::remember(
+            sprintf('admin:modals:review_application:document_options:%d', $applicationId),
+            now()->addSeconds(self::ADMIN_MODAL_CACHE_TTL_SECONDS),
+            function () use ($applicationId): array {
+                return Document::query()
+                    ->where('application_id', $applicationId)
+                    ->with('requirement')
+                    ->orderByDesc('uploaded_at')
+                    ->get()
+                    ->mapWithKeys(static function (Document $document): array {
+                        $label = (string) ($document->file_name ?? 'Document');
+                        $requirement = filled($document->requirement?->name)
+                            ? (string) $document->requirement->name
+                            : 'No requirement assigned';
+                        $uploadedAt = $document->uploaded_at?->format('M d, Y h:i A') ?? 'No timestamp';
+
+                        return [
+                            (int) $document->document_id => sprintf('%s (Requirement: %s) · %s', $label, $requirement, $uploadedAt),
+                        ];
+                    })
+                    ->all();
+            }
+        );
     }
 
     public function getLatestReviewProperty(): ?ApplicationReview

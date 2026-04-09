@@ -3,6 +3,7 @@
 namespace App\Filament\Exports;
 
 use App\Models\Application;
+use App\Support\StaticUiOptionsCache;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
@@ -56,9 +57,7 @@ class ApplicationsExporter extends Exporter
                         ->helperText('Optional. Do not include the extension.'),
                     Select::make('storage_disk')
                         ->label('Export Storage (Server)')
-                        ->options([
-                            'local' => 'Local Folder',
-                        ])
+                        ->options(StaticUiOptionsCache::exportStorageDiskOptions('admin_aics_staff'))
                         ->default('local')
                         ->disabled()
                         ->dehydrated(false)
@@ -91,8 +90,4 @@ class ApplicationsExporter extends Exporter
         return parent::getFileDisk();
     }
 
-    public function getJobConnection(): ?string
-    {
-        return extension_loaded('intl') ? null : 'sync';
-    }
 }

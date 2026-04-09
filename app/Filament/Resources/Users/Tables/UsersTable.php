@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Tables;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\StaticUiOptionsCache;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -58,20 +59,10 @@ class UsersTable
             ])
             ->filters([
                 SelectFilter::make('role')
-                    ->options([
-                        'admin' => 'Admin',
-                        'aics_staff' => 'AICS Staff',
-                        'mswd_officer' => 'MSWD Officer',
-                        'mayor_office_staff' => 'Mayor Office Staff',
-                        'accountant' => 'Accountant',
-                        'treasurer' => 'Treasurer',
-                    ]),
+                    ->options(StaticUiOptionsCache::adminUserRoles()),
 
                 SelectFilter::make('status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                    ]),
+                    ->options(StaticUiOptionsCache::adminUserStatuses()),
             ])
             ->recordActions([
                 ActionGroup::make([

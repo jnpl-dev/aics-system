@@ -4,8 +4,8 @@
     @endphp
 
     <div class="grid gap-6 xl:grid-cols-2">
-        <section class="rounded-xl border border-gray-200 bg-white p-4">
-            <h3 class="mb-3 text-base font-semibold text-gray-900">Applications</h3>
+        <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="mb-4 text-base font-semibold text-gray-900">Applications</h2>
             <div class="grid gap-3 sm:grid-cols-3">
                 <article class="flex min-h-28 flex-col justify-between rounded-lg bg-emerald-500 p-3 text-white shadow-sm">
                     <p class="text-xs text-white/90">Submitted (Pending Applications)</p>
@@ -22,8 +22,8 @@
             </div>
         </section>
 
-        <section class="rounded-xl border border-gray-200 bg-white p-4">
-            <h3 class="mb-3 text-base font-semibold text-gray-900">Assistance Code</h3>
+        <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 class="mb-4 text-base font-semibold text-gray-900">Assistance Code</h2>
             <div class="grid gap-3 sm:grid-cols-3">
                 <article class="flex min-h-28 flex-col justify-between rounded-lg bg-emerald-500 p-3 text-white shadow-sm">
                     <p class="text-xs text-white/90">Pending (Pending Assistance Code)</p>
