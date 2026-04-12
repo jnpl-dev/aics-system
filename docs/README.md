@@ -101,6 +101,7 @@ Supabase (storage only)
 - [Frontend Development Guide](./frontend.md)
 - [Form Validation and Sanitization](./form-validation-sanitization.md)
 - [Troubleshooting](./troubleshooting.md)
+- [Collaborator Installation Guide](./installation-collaborators.md)
 
 ## Supabase Auth Setup (Phase 2)
 

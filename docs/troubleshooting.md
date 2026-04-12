@@ -121,6 +121,33 @@ HTTP fake did not include the new Supabase Admin endpoint:
 
 ---
 
+## 5) Dashboard/queue still shows sample data after cleanup
+
+### Symptoms
+
+- Test-like records (`REF-*`, `Test Applicant`, `@example.com`) were deleted from DB
+- UI still appears to show old or inconsistent operational data
+
+### Root Cause
+
+One (or both) of these conditions:
+
+- Remaining synthetic records still exist in related tables (`application`, `document`, `application_review`, `application_log`, `user`, `audit_log`)
+- Cached payloads were not cleared after cleanup
+
+### Fix Applied
+
+- Deterministic cleanup of synthetic records and dependent rows
+- `php artisan cache:clear` after data purge to prevent stale key reuse
+
+### Prevention Checklist
+
+- Before demos/validation, ensure no synthetic records remain in operational tables
+- Clear app cache after large data cleanup operations
+- Prefer explicit test markers (e.g., `@example.com`, `REF-*`) to make cleanup safe and repeatable
+
+---
+
 ## Quick Diagnostics Commands
 
 Use these when similar issues reappear:

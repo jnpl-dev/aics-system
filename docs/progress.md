@@ -29,7 +29,7 @@ Phase 6: Application Review and Validation Management (AICS staff workflow)
 - [x] Refine AICS Staff analytics UX: checklist-based line trend filters at chart bottom, actionable New/Old pending review queues, and per-section filters (no global analytics filter)
 - [x] Simplify AICS Staff dashboard + analytics to core operational scope: 6 KPI cards (Applications + Assistance Code sections), New/Old Applications lists, fixed 7-day dashboard trend, and analytics Week/Month/Year period selector
 - [x] Implement Filament CSV/XLSX exports for User Management, Audit Logs, and Applications with customizable export filename and local server-disk storage
-- [x] Optimize AICS Staff dashboard perceived load by disabling lazy widget placeholders while retaining analytics data caching
+- [x] Optimize AICS Staff dashboard perceived load by disabling lazy widget placeholders while rendering fast-changing analytics live and caching only static admin/UI option sets
 
 ### Future Intake Quality Roadmap (Planned)
 
@@ -268,6 +268,9 @@ Phase 6: Application Review and Validation Management (AICS staff workflow)
 | 2026-04-07 | Updated export UX: export modal now supports custom file name and fixed local server storage selection; analytics-page export action was removed and unused analytics exporter artifact deleted for scope alignment.                                                                                                                                                                          | Copilot    |
 | 2026-04-07 | Improved AICS dashboard UX consistency: disabled lazy loading on dashboard widgets to prevent visual placeholder resets on direct navigation and removed the extra outer KPI wrapper card so dashboard KPI presentation matches analytics section structure.                                                                                                                                  | Copilot    |
 | 2026-04-07 | Cleaned export modal presentation: standardized `Export Output` fields to a compact single-column layout and simplified helper copy to remove empty-column spacing/visual imbalance across Users, Audit Logs, and Applications export dialogs.                                                                                                                                                | Copilot    |
+| 2026-04-09 | Implemented targeted static UI caching strategy: admin and AICS export modal storage options now use cached static option providers, and admin new-user role/status/edit-operation options (including users table filter options) are cached under `admin:static:*` keys.                                                                                                                     | Copilot    |
+| 2026-04-09 | Rebalanced runtime performance behavior: removed cache wrappers from frequently changing AICS analytics counts/trends/lists so queue-facing values render live while preserving targeted modal-option caching.                                                                                                                                                                                | Copilot    |
+| 2026-04-09 | Performed development data hygiene cleanup: purged test/sample `@example.com` users and sample `REF-*`/`Test Applicant` applications (plus dependent `document`, `application_review`, `application_log`, and related `audit_log` rows), then cleared and rebuilt cache with only intended static keys.                                                                                       | Copilot    |
 
 ## Important Takeaways and Reusable Components
 
