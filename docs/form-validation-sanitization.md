@@ -31,13 +31,40 @@ Current approach:
 - Server-side sanitization in `prepareForValidation()`:
     - trim + strip tags + collapse whitespace for text fields
     - normalize applicant phone number to digits-only
+    - default address values: Region III - Central Luzon, Nueva Ecija, General Mamerto Natividad
 - Validation coverage:
     - required applicant and beneficiary fields
     - allowed value checks (category, sex, relationship)
-    - phone format enforcement (`09XXXXXXXXX`)
+    - phone format enforcement (`09XXXXXXXXX` - 11 digits)
+    - **Applicant age: must be 18 years old or above** (`before:-18 years`)
+    - **Pending application check: blocks if beneficiary has pending application within 3 months**
     - conditional per-category requirement uploads
     - conditional authorization letter when relationship is `Representative`
-    - file constraints (pdf/jpg/jpeg/png, max 5MB)
+    - file constraints (jpg/jpeg, max 1MB)
+    - honeypot bot protection on public forms
+
+#### Default Address Configuration
+- Region: Region III - Central Luzon (pre-filled, read-only)
+- Province: Nueva Ecija (pre-filled, read-only)
+- Municipality: General Mamerto Natividad (pre-filled, read-only)
+- Barangay: User selects (only editable field)
+
+## Security: Honeypot Protection
+
+Public-facing forms use honeypot protection to block bot submissions:
+
+- Middleware: `App\Http\Middleware\VerifyHuman`
+- Hidden field: `hp_token` (must be empty for valid submission)
+- Protected endpoints:
+    - `POST /apply` - Application submission
+    - `POST /track/access` - Application tracking lookup
+    - `POST /track/application/resubmit` - Document resubmission
+
+## Session Configuration
+
+- Session driver: database
+- Session lifetime: 480 minutes (8 hours)
+- Session same-site: lax
 
 ## Important note
 

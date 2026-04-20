@@ -28,6 +28,7 @@
 
             <form action="{{ route('applicant.track.access') }}" method="POST" class="grid gap-4 md:grid-cols-3 md:items-end">
                 @csrf
+                <input type="hidden" name="hp_token" value="">
 
                 <div class="md:col-span-1">
                     <label for="reference_code" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#176334]/80">Reference Number</label>
@@ -185,6 +186,7 @@
 
                     <form action="{{ route('applicant.track.resubmit') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                         @csrf
+                        <input type="hidden" name="hp_token" value="">
 
                         @foreach ($requestedResubmissionSlots as $slotKey => $slot)
                             <div class="rounded-lg border border-[#176334]/15 p-4">

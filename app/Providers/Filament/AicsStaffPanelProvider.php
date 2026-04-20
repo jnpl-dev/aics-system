@@ -24,11 +24,16 @@ class AicsStaffPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $logoPath = file_exists(public_path('logo.png')) ? asset('logo.png') : null;
+
         return $panel
             ->id('aics-staff')
             ->path('aics-staff')
             ->spa(true, true)
             ->login(Login::class)
+            ->brandName('')
+            ->brandLogo($logoPath)
+            ->darkModeBrandLogo(fn () => $logoPath)
             ->viteTheme('resources/css/filament/aics-staff/theme.css')
             ->colors([
                 'primary' => Color::hex('#176334'),

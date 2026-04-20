@@ -96,6 +96,7 @@
         @endphp
         <form id="application-form" method="POST" action="{{ route('applicant.apply.store') }}" enctype="multipart/form-data" class="{{ $initialCategory ? '' : 'hidden ' }}rounded-xl border border-[#176334]/20 bg-white p-6 shadow-sm">
             @csrf
+            <input type="hidden" name="hp_token" value="">
             <input type="hidden" id="selected-assistance" name="category_name" value="{{ $initialCategory }}">
 
             <div class="rounded-lg border border-[#6C9C02]/40 bg-[#6C9C02]/10 px-4 py-3 text-sm text-[#176334]">
@@ -132,7 +133,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-sm/6 font-medium text-gray-900">Date of birth</label>
-                            <div class="mt-2"><input type="date" name="applicant[date_of_birth]" value="{{ old('applicant.date_of_birth') }}" required class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-[#176334] sm:text-sm/6" /></div>
+                            <div class="mt-2"><input type="date" name="applicant[date_of_birth]" value="{{ old('applicant.date_of_birth') }}" required max="" id="applicant-dob" class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-[#176334] sm:text-sm/6" /></div>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-sm/6 font-medium text-gray-900">Phone number</label>
@@ -816,6 +817,13 @@
             refreshHeader();
             updateAuthorizationLetterRequirement();
             persistFormDraft();
+
+            const dobInput = document.getElementById('applicant-dob');
+            if (dobInput) {
+                const today = new Date();
+                const minDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                dobInput.max = minDate.toISOString().split('T')[0];
+            }
         })();
     </script>
 </body>

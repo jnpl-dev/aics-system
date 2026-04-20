@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Middleware\RequireRole;
+use App\Http\Middleware\VerifyHuman;
+use App\Http\Middleware\VerifySupabaseToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\RequireRole;
-use App\Http\Middleware\VerifySupabaseToken;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supabase.auth' => VerifySupabaseToken::class,
             'role' => RequireRole::class,
+            'human' => VerifyHuman::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

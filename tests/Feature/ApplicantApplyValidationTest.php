@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Application;
+use App\Models\Document;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -66,6 +68,7 @@ class ApplicantApplyValidationTest extends TestCase
                 'sex' => 'Male',
                 'date_of_birth' => '1998-06-12',
                 'phone_number' => '0917-123-4567',
+                'baranggay' => 'Poblacion North',
                 'address' => ' Purok 1, Barangay Sample ',
             ],
             'beneficiary' => [
@@ -95,15 +98,15 @@ class ApplicantApplyValidationTest extends TestCase
         $this->assertDatabaseCount('application', 1);
         $this->assertDatabaseCount('document', 7);
 
-        $application = \App\Models\Application::query()->firstOrFail();
+        $application = Application::query()->firstOrFail();
 
         $this->assertSame('submitted', $application->status);
         $this->assertNotEmpty($application->reference_code);
         $this->assertSame('09171234567', $application->applicant_phone);
 
-    $response->assertRedirect(route('applicant.apply.success', ['referenceCode' => $application->reference_code]));
+        $response->assertRedirect(route('applicant.apply.success', ['referenceCode' => $application->reference_code]));
 
-        $storedDocuments = \App\Models\Document::query()->where('application_id', $application->application_id)->get();
+        $storedDocuments = Document::query()->where('application_id', $application->application_id)->get();
 
         foreach ($storedDocuments as $document) {
             $this->assertNotEmpty($document->file_path);

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Filament\Auth\Responses\LogoutResponse as FilamentLogoutResponse;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Validator::extend('honeypot', function ($attribute, $value, $parameters): bool {
+            return $value === null || $value === '';
+        }, 'Access denied');
+
         if (! $this->isServeCommand()) {
             return;
         }

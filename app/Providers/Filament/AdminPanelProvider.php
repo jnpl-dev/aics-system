@@ -24,12 +24,19 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $logoPath = file_exists(public_path('logo.png')) ? asset('logo.png') : null;
+        $faviconPath = file_exists(public_path('favicon.ico')) ? asset('favicon.ico') : null;
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->spa(true, true)
             ->login(Login::class)
+            ->brandName($logoPath ? 'AICS SYSTEM' : 'AICS SYSTEM')
+            ->brandLogo($logoPath)
+            ->favicon($faviconPath)
+            ->darkModeBrandLogo(fn () => $logoPath)
             ->colors([
                 'primary' => Color::hex('#176334'),
                 'success' => Color::hex('#6C9C02'),

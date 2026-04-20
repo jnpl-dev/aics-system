@@ -9,6 +9,7 @@ use App\Models\Document;
 use App\Models\Requirement;
 use App\Services\ApplicantDocumentStorageService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -58,6 +59,27 @@ class ApplicantApplicationController extends Controller
     {
         $validated = $request->validated();
 
+        $beneficiaryName = trim(sprintf(
+            '%s %s %s',
+            $validated['beneficiary']['first_name'],
+            $validated['beneficiary']['middle_name'] ?? '',
+            $validated['beneficiary']['last_name']
+        ));
+
+        $pendingApplication = Application::query()
+            ->where('beneficiary_last_name', $validated['beneficiary']['last_name'])
+            ->where('beneficiary_first_name', $validated['beneficiary']['first_name'])
+            ->whereIn('status', ['submitted', 'under_review', 'coded', 'approved'])
+            ->where('submitted_at', '>=', now()->subMonths(3))
+            ->exists();
+
+        if ($pendingApplication) {
+            return redirect()
+                ->route('applicant.apply')
+                ->withErrors(['beneficiary' => 'This beneficiary has a pending application within the last 3 months. Please wait for the current application to be processed.'])
+                ->withInput();
+        }
+
         $category = AssistanceCategory::query()
             ->where('name', (string) $validated['category_name'])
             ->where('is_active', true)
@@ -103,7 +125,7 @@ class ApplicantApplicationController extends Controller
                     ->pluck('requirement_id', 'name');
 
                 foreach ((array) ($validated['requirements'] ?? []) as $requirementKey => $file) {
-                    if (! $file instanceof \Illuminate\Http\UploadedFile) {
+                    if (! $file instanceof UploadedFile) {
                         continue;
                     }
 

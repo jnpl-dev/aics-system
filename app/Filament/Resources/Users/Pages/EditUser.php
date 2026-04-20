@@ -13,6 +13,18 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $currentUserId = (string) auth()->id();
+        $recordUserId = (string) $this->getRecord()->getKey();
+
+        if ($currentUserId === $recordUserId) {
+            $this->redirect(UserResource::getUrl('index'));
+        }
+
+        return $data;
+    }
+
     protected function getRedirectUrl(): ?string
     {
         return UserResource::getUrl('index');
@@ -65,7 +77,7 @@ class EditUser extends EditRecord
                 'user_id' => is_int($actor?->user_id) ? $actor->user_id : 0,
                 'module' => 'user_management',
                 'action' => 'update',
-                'description' => 'event=USER_PASSWORD_RESET; meta=' . json_encode([
+                'description' => 'event=USER_PASSWORD_RESET; meta='.json_encode([
                     'target_user_id' => $record->user_id,
                     'target_user_email' => $record->email,
                 ], JSON_UNESCAPED_UNICODE),
@@ -79,7 +91,7 @@ class EditUser extends EditRecord
                 'user_id' => is_int($actor?->user_id) ? $actor->user_id : 0,
                 'module' => 'user_management',
                 'action' => 'update',
-                'description' => 'event=USER_STATUS_CHANGED; meta=' . json_encode([
+                'description' => 'event=USER_STATUS_CHANGED; meta='.json_encode([
                     'target_user_id' => $record->user_id,
                     'target_user_email' => $record->email,
                     'status' => $updateData['status'],

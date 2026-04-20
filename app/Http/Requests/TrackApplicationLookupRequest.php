@@ -17,6 +17,7 @@ class TrackApplicationLookupRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'hp_token' => ['honeypot'],
             'reference_code' => ['required', 'string', 'max:80'],
             'applicant_surname' => ['required', 'string', 'max:120'],
         ];

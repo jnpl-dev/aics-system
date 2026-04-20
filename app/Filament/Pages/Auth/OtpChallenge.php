@@ -6,9 +6,10 @@ use App\Models\AuditLog;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Notifications\Notification;
-use Filament\Panel;
 use Filament\Pages\SimplePage;
+use Filament\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -48,20 +49,20 @@ class OtpChallenge extends SimplePage
     public function mount(): void
     {
         if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
-            $this->redirectRoute('filament.auth.otp', navigate: true);
+            $this->redirectRoute('login');
 
             return;
         }
 
         if (Filament::auth()->check()) {
-            $this->redirect($this->getPanelHomeUrl(), navigate: true);
+            $this->redirect($this->getPanelHomeUrl());
 
             return;
         }
 
         $challengeId = $this->getChallengeIdFromSession();
 
-        if (blank($challengeId) || ! is_array(Cache::get($this->otpCacheKey($challengeId)))) {
+        if (blank($challengeId) || ! is_array($this->otpStore()->get($this->otpCacheKey($challengeId)))) {
             $this->clearChallenge((string) $challengeId);
 
             $this->redirectToUrlWithError(
@@ -72,7 +73,7 @@ class OtpChallenge extends SimplePage
             return;
         }
 
-        $payload = Cache::get($this->otpCacheKey($challengeId));
+        $payload = $this->otpStore()->get($this->otpCacheKey($challengeId));
 
         $this->otpSent = is_array($payload)
             && (($payload['otp_sent'] ?? false) === true)
@@ -113,7 +114,7 @@ class OtpChallenge extends SimplePage
             );
         }
 
-        $payload = Cache::get($this->otpCacheKey($challengeId));
+        $payload = $this->otpStore()->get($this->otpCacheKey($challengeId));
 
         if (! is_array($payload)) {
             $this->clearChallenge($challengeId);
@@ -163,7 +164,7 @@ class OtpChallenge extends SimplePage
         if (! Hash::check((string) $otpCode, (string) ($payload['code_hash'] ?? ''))) {
             $payload['attempts'] = $attempts + 1;
 
-            Cache::put(
+            $this->otpStore()->put(
                 $this->otpCacheKey($challengeId),
                 $payload,
                 now()->addMinutes(self::OTP_TTL_MINUTES)
@@ -183,7 +184,6 @@ class OtpChallenge extends SimplePage
 
         $authGuard = Filament::auth();
         $authProvider = $authGuard->getProvider(); /** @phpstan-ignore-line */
-
         $user = $authProvider->retrieveById($payload['user_id'] ?? null);
 
         if (! $user instanceof Authenticatable) {
@@ -226,6 +226,7 @@ class OtpChallenge extends SimplePage
         $this->clearChallenge($challengeId);
 
         session()->regenerate();
+        session()->regenerateToken();
 
         Notification::make()
             ->title('OTP verified')
@@ -233,7 +234,7 @@ class OtpChallenge extends SimplePage
             ->success()
             ->send();
 
-        return $this->redirect($targetPanel->getUrl(), navigate: true);
+        return $this->redirect($targetPanel->getUrl());
     }
 
     public function resendOtp(): void
@@ -254,7 +255,7 @@ class OtpChallenge extends SimplePage
             return;
         }
 
-        $payload = Cache::get($this->otpCacheKey($challengeId));
+        $payload = $this->otpStore()->get($this->otpCacheKey($challengeId));
 
         if (! is_array($payload)) {
             $this->clearChallenge($challengeId);
@@ -288,7 +289,7 @@ class OtpChallenge extends SimplePage
         $payload['code_hash'] = Hash::make($code);
         $payload['attempts'] = 0;
 
-        Cache::put(
+        $this->otpStore()->put(
             $this->otpCacheKey($challengeId),
             $payload,
             now()->addMinutes(self::OTP_TTL_MINUTES)
@@ -317,7 +318,7 @@ class OtpChallenge extends SimplePage
             return;
         }
 
-        $payload = Cache::get($this->otpCacheKey($challengeId));
+        $payload = $this->otpStore()->get($this->otpCacheKey($challengeId));
 
         if (! is_array($payload)) {
             return;
@@ -351,7 +352,7 @@ class OtpChallenge extends SimplePage
         $payload['otp_sent'] = true;
         $payload['attempts'] = 0;
 
-        Cache::put(
+        $this->otpStore()->put(
             $this->otpCacheKey($challengeId),
             $payload,
             now()->addMinutes(self::OTP_TTL_MINUTES)
@@ -374,7 +375,7 @@ class OtpChallenge extends SimplePage
     {
         $this->clearChallenge((string) $this->getChallengeIdFromSession());
 
-        return $this->redirect($this->getPanelLoginUrl(), navigate: true);
+        return $this->redirect($this->getPanelLoginUrl());
     }
 
     private function getPanelLoginUrl(): string
@@ -398,7 +399,7 @@ class OtpChallenge extends SimplePage
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function resolveTargetPanelFromPayload(array $payload): ?Panel
     {
@@ -468,7 +469,7 @@ class OtpChallenge extends SimplePage
     private function clearChallenge(string $challengeId): void
     {
         if ($challengeId !== '') {
-            Cache::forget($this->otpCacheKey($challengeId));
+            $this->otpStore()->forget($this->otpCacheKey($challengeId));
         }
 
         session()->forget(self::OTP_CHALLENGE_SESSION_KEY);
@@ -479,6 +480,25 @@ class OtpChallenge extends SimplePage
         return "filament-login-otp:{$challengeId}";
     }
 
+    private function otpStore(): CacheRepository
+    {
+        $defaultStore = (string) config('cache.default', 'database');
+
+        if (app()->environment('testing')) {
+            return Cache::store($defaultStore);
+        }
+
+        if ($defaultStore !== 'array') {
+            return Cache::store($defaultStore);
+        }
+
+        if (is_array(config('cache.stores.file'))) {
+            return Cache::store('file');
+        }
+
+        return Cache::store($defaultStore);
+    }
+
     private function redirectToUrlWithError(string $url, string $message, string $field = 'data.email'): mixed
     {
         session()->flash(self::AUTH_ERROR_SESSION_KEY, [
@@ -486,7 +506,7 @@ class OtpChallenge extends SimplePage
             'message' => $message,
         ]);
 
-        return $this->redirect($url, navigate: true);
+        return $this->redirect($url);
     }
 
     private function sendOtpEmail(string $email, string $otpCode): bool
@@ -508,7 +528,7 @@ class OtpChallenge extends SimplePage
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function payloadUserId(array $payload): int
     {
@@ -518,7 +538,7 @@ class OtpChallenge extends SimplePage
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function payloadEmail(array $payload): ?string
     {
@@ -528,7 +548,7 @@ class OtpChallenge extends SimplePage
     }
 
     /**
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>  $metadata
      */
     private function recordOtpAuditEvent(string $eventCode, int $userId, ?string $email = null, array $metadata = []): void
     {
@@ -544,7 +564,7 @@ class OtpChallenge extends SimplePage
             }
 
             if ($metadata !== []) {
-                $parts[] = 'meta=' . json_encode($metadata, JSON_UNESCAPED_UNICODE);
+                $parts[] = 'meta='.json_encode($metadata, JSON_UNESCAPED_UNICODE);
             }
 
             AuditLog::query()->create([

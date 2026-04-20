@@ -47,6 +47,9 @@
 
         <main class="w-full max-w-3xl rounded-2xl border border-[#176334]/20 bg-white shadow-lg p-8 md:p-12">
             <div class="text-center mb-10">
+                @if(file_exists(public_path('logo.png')))
+                <img src="{{ asset('logo.png') }}" alt="AICS Logo" class="h-32 mx-auto mb-4" />
+                @endif
                 <h1 class="text-3xl md:text-4xl font-semibold tracking-tight mb-3">AICS Service Directory</h1>
                 <p class="text-[#176334]/80">Choose where you want to go.</p>
             </div>

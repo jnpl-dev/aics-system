@@ -8,6 +8,12 @@
 <div data-ph-address-selector class="space-y-3">
     <label class="block text-sm/6 font-medium text-gray-900">{{ $label }}</label>
 
+    <div class="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
+        <p class="text-sm text-amber-800">
+            <strong>Important:</strong> Only residents of General Mamerto Natividad, Nueva Ecija, Central Luzon may apply for AICS assistance.
+        </p>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
             <label class="block text-xs/5 font-medium text-gray-700">Region</label>
@@ -28,6 +34,10 @@
     </div>
 
     <input type="hidden" name="{{ $name }}" value="{{ $value }}" data-role="composed-address" />
+    <input type="hidden" name="{{ $prefix }}[region]" value="" data-role="region-value" />
+    <input type="hidden" name="{{ $prefix }}[province]" value="" data-role="province-value" />
+    <input type="hidden" name="{{ $prefix }}[municipality]" value="" data-role="municipality-value" />
+    <input type="hidden" name="{{ $prefix }}[baranggay]" value="" data-role="barangay-value" />
 
     <div>
         <label class="block text-xs/5 font-medium text-gray-700">Composed address</label>
@@ -35,6 +45,7 @@
     </div>
 
     <p data-role="status" class="text-xs text-gray-500"></p>
+    <p data-role="error" class="text-xs text-red-600 hidden"></p>
 </div>
 
 @once
@@ -54,24 +65,17 @@
 
         const fetchLocations = async (path) => {
             const response = await fetch(`${PSGC_API_BASE}${path}`, { headers: { Accept: 'application/json' } });
-            if (!response.ok) {
-                throw new Error(`Failed to load locations (${response.status})`);
-            }
-
+            if (!response.ok) throw new Error(`Failed to load (${response.status})`);
             const payload = await response.json();
-            return Array.isArray(payload)
-                ? payload.map(toOption).filter((item) => item.code && item.name)
-                : [];
+            return Array.isArray(payload) ? payload.map(toOption).filter((item) => item.code && item.name) : [];
         };
 
         const populateSelect = (selectElement, options, placeholder) => {
             selectElement.innerHTML = '';
-
             const placeholderOption = document.createElement('option');
             placeholderOption.value = '';
             placeholderOption.textContent = placeholder;
             selectElement.appendChild(placeholderOption);
-
             options.forEach((option) => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option.code;
@@ -88,10 +92,14 @@
             const hiddenAddressInput = wrapper.querySelector('[data-role="composed-address"]');
             const addressPreviewInput = wrapper.querySelector('[data-role="address-preview"]');
             const statusElement = wrapper.querySelector('[data-role="status"]');
+            const errorElement = wrapper.querySelector('[data-role="error"]');
 
-            if (!regionSelect || !provinceSelect || !citySelect || !barangaySelect || !hiddenAddressInput || !addressPreviewInput || !statusElement) {
-                return;
-            }
+            const hiddenRegion = wrapper.querySelector('[data-role="region-value"]');
+            const hiddenProvince = wrapper.querySelector('[data-role="province-value"]');
+            const hiddenMunicipality = wrapper.querySelector('[data-role="municipality-value"]');
+            const hiddenBarangay = wrapper.querySelector('[data-role="barangay-value"]');
+
+            if (!regionSelect || !provinceSelect || !citySelect || !barangaySelect) return;
 
             const getSelectedText = (selectElement) => {
                 const selectedOption = selectElement.options[selectElement.selectedIndex];
@@ -99,118 +107,30 @@
             };
 
             const updateComposedAddress = () => {
-                const parts = [
-                    getSelectedText(barangaySelect),
-                    getSelectedText(citySelect),
-                    provinceSelect.disabled ? '' : getSelectedText(provinceSelect),
-                    getSelectedText(regionSelect),
-                ].filter(Boolean);
-
+                const parts = [getSelectedText(barangaySelect), getSelectedText(citySelect), getSelectedText(provinceSelect), getSelectedText(regionSelect)].filter(Boolean);
                 const composedAddress = parts.join(', ');
                 hiddenAddressInput.value = composedAddress;
                 addressPreviewInput.value = composedAddress;
-            };
-
-            const setDisabled = (selectElement, disabled, placeholder) => {
-                selectElement.disabled = disabled;
-                if (disabled) {
-                    populateSelect(selectElement, [], placeholder);
-                }
+                
+                hiddenRegion.value = getSelectedText(regionSelect);
+                hiddenProvince.value = getSelectedText(provinceSelect);
+                hiddenMunicipality.value = getSelectedText(citySelect);
+                hiddenBarangay.value = getSelectedText(barangaySelect);
             };
 
             const loadBarangays = async (cityCode) => {
-                setDisabled(barangaySelect, true, 'Loading barangays...');
-                const barangays = await fetchLocations(`/cities-municipalities/${cityCode}/barangays/`);
-                populateSelect(barangaySelect, barangays, 'Select barangay');
-                barangaySelect.disabled = false;
+                barangaySelect.disabled = true;
+                barangaySelect.innerHTML = '<option value="">Loading barangays...</option>';
+                try {
+                    const barangays = await fetchLocations(`/cities-municipalities/${cityCode}/barangays/`);
+                    populateSelect(barangaySelect, barangays, 'Select barangay');
+                    barangaySelect.disabled = false;
+                } catch (error) {
+                    barangaySelect.innerHTML = '<option value="">Unable to load</option>';
+                }
             };
 
-            const loadCitiesByRegion = async (regionCode) => {
-                setDisabled(citySelect, true, 'Loading cities/municipalities...');
-                const cities = await fetchLocations(`/regions/${regionCode}/cities-municipalities/`);
-                populateSelect(citySelect, cities, 'Select city / municipality');
-                citySelect.disabled = false;
-            };
-
-            const loadCitiesByProvince = async (provinceCode) => {
-                setDisabled(citySelect, true, 'Loading cities/municipalities...');
-                const cities = await fetchLocations(`/provinces/${provinceCode}/cities-municipalities/`);
-                populateSelect(citySelect, cities, 'Select city / municipality');
-                citySelect.disabled = false;
-            };
-
-            regionSelect.addEventListener('change', async () => {
-                hiddenAddressInput.value = '';
-                addressPreviewInput.value = '';
-                setDisabled(provinceSelect, true, 'Select province');
-                setDisabled(citySelect, true, 'Select city / municipality');
-                setDisabled(barangaySelect, true, 'Select barangay');
-
-                if (!regionSelect.value) {
-                    return;
-                }
-
-                try {
-                    statusElement.textContent = 'Loading locations...';
-                    const provinces = await fetchLocations(`/regions/${regionSelect.value}/provinces/`);
-
-                    if (provinces.length > 0) {
-                        populateSelect(provinceSelect, provinces, 'Select province');
-                        provinceSelect.disabled = false;
-                        provinceSelect.required = true;
-                    } else {
-                        provinceSelect.required = false;
-                        setDisabled(provinceSelect, true, 'No province (NCR / independent city)');
-                        await loadCitiesByRegion(regionSelect.value);
-                    }
-
-                    statusElement.textContent = '';
-                } catch (error) {
-                    statusElement.textContent = 'Unable to load location data right now. Please refresh and try again.';
-                }
-            });
-
-            provinceSelect.addEventListener('change', async () => {
-                hiddenAddressInput.value = '';
-                addressPreviewInput.value = '';
-                setDisabled(citySelect, true, 'Select city / municipality');
-                setDisabled(barangaySelect, true, 'Select barangay');
-
-                if (!provinceSelect.value) {
-                    return;
-                }
-
-                try {
-                    statusElement.textContent = 'Loading locations...';
-                    await loadCitiesByProvince(provinceSelect.value);
-                    statusElement.textContent = '';
-                } catch (error) {
-                    statusElement.textContent = 'Unable to load city/municipality options.';
-                }
-            });
-
-            citySelect.addEventListener('change', async () => {
-                hiddenAddressInput.value = '';
-                addressPreviewInput.value = '';
-                setDisabled(barangaySelect, true, 'Select barangay');
-
-                if (!citySelect.value) {
-                    return;
-                }
-
-                try {
-                    statusElement.textContent = 'Loading locations...';
-                    await loadBarangays(citySelect.value);
-                    statusElement.textContent = '';
-                } catch (error) {
-                    statusElement.textContent = 'Unable to load barangay options.';
-                }
-            });
-
-            barangaySelect.addEventListener('change', updateComposedAddress);
-            citySelect.addEventListener('change', updateComposedAddress);
-            provinceSelect.addEventListener('change', updateComposedAddress);
-            regionSelect.addEventListener('change', updateComposedAddress);
+            [barangaySelect, citySelect, provinceSelect, regionSelect].forEach(el => el.addEventListener('change', updateComposedAddress));
 
             const initialize = async () => {
                 try {
@@ -220,33 +140,67 @@
                     regionSelect.disabled = false;
                     statusElement.textContent = '';
                 } catch (error) {
-                    statusElement.textContent = 'Unable to load Philippine address data. Please refresh and try again.';
-                    setDisabled(regionSelect, true, 'Address data unavailable');
-                    setDisabled(provinceSelect, true, 'Address data unavailable');
-                    setDisabled(citySelect, true, 'Address data unavailable');
-                    setDisabled(barangaySelect, true, 'Address data unavailable');
-                }
-
-                if (hiddenAddressInput.value) {
-                    addressPreviewInput.value = hiddenAddressInput.value;
+                    statusElement.textContent = 'Unable to load address data. Please refresh.';
                 }
             };
 
-            setDisabled(regionSelect, true, 'Loading regions...');
-            setDisabled(provinceSelect, true, 'Select province');
-            setDisabled(citySelect, true, 'Select city / municipality');
-            setDisabled(barangaySelect, true, 'Select barangay');
+            [regionSelect, provinceSelect, citySelect, barangaySelect].forEach(el => {
+                el.disabled = true;
+                el.innerHTML = '<option value="">Loading...</option>';
+            });
+
+            regionSelect.addEventListener('change', async () => {
+                hiddenAddressInput.value = '';
+                addressPreviewInput.value = '';
+                [provinceSelect, citySelect, barangaySelect].forEach(el => {
+                    el.disabled = true;
+                    el.innerHTML = '<option value="">Select</option>';
+                });
+                if (regionSelect.value) {
+                    statusElement.textContent = 'Loading...';
+                    const provinces = await fetchLocations(`/regions/${regionSelect.value}/provinces/`);
+                    populateSelect(provinceSelect, provinces, 'Select province');
+                    provinceSelect.disabled = false;
+                    statusElement.textContent = '';
+                }
+            });
+
+            provinceSelect.addEventListener('change', async () => {
+                hiddenAddressInput.value = '';
+                addressPreviewInput.value = '';
+                [citySelect, barangaySelect].forEach(el => {
+                    el.disabled = true;
+                    el.innerHTML = '<option value="">Select</option>';
+                });
+                if (provinceSelect.value) {
+                    statusElement.textContent = 'Loading...';
+                    const cities = await fetchLocations(`/provinces/${provinceSelect.value}/cities-municipalities/`);
+                    populateSelect(citySelect, cities, 'Select municipality');
+                    citySelect.disabled = false;
+                    statusElement.textContent = '';
+                }
+            });
+
+            citySelect.addEventListener('change', async () => {
+                hiddenAddressInput.value = '';
+                addressPreviewInput.value = '';
+                barangaySelect.disabled = true;
+                barangaySelect.innerHTML = '<option value="">Select</option>';
+                if (citySelect.value) {
+                    statusElement.textContent = 'Loading...';
+                    await loadBarangays(citySelect.value);
+                    statusElement.textContent = '';
+                    updateComposedAddress();
+                }
+            });
+
             initialize();
         };
 
-        const initAll = () => {
-            document.querySelectorAll('[data-ph-address-selector]').forEach(setupAddressSelector);
-        };
-
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initAll);
+            document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('[data-ph-address-selector]').forEach(setupAddressSelector));
         } else {
-            initAll();
+            document.querySelectorAll('[data-ph-address-selector]').forEach(setupAddressSelector);
         }
     })();
 </script>

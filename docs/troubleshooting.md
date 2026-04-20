@@ -158,3 +158,49 @@ Use these when similar issues reappear:
 4. Check browser Network tab for `/admin/users` request status and response payload
 
 (Use project-standard tools/tests before manual DB edits.)
+
+---
+
+## 6) OTP says "session expired" immediately after login
+
+### Symptoms
+
+- User submits valid credentials at `/login`
+- Redirect lands on `/otp`
+- Page shows: **OTP session expired. Please sign in again.**
+
+### Root Cause
+
+OTP challenge payload was stored in cache, but local runtime used `CACHE_STORE=array` (request-scoped memory). The payload was lost between `/login` and `/otp` requests.
+
+### Fix Applied
+
+- OTP challenge cache reads/writes now use a non-ephemeral store in local runtime (`file` fallback when default cache is `array`)
+- Testing environment keeps default cache behavior to preserve deterministic test setup
+
+### Prevention Checklist
+
+- Avoid using `array` cache for multi-request auth challenge data
+- Re-run auth flow tests after changing cache/session defaults
+
+---
+
+## 7) Full test suite fails with duplicate index on `application_status_submitted_idx`
+
+### Symptoms
+
+- `php artisan test` fails during migration setup (sqlite in-memory)
+- Error: index `application_status_submitted_idx` already exists
+
+### Root Cause
+
+The index was already created in base application-table migration, then recreated in a later performance-index migration.
+
+### Fix Applied
+
+- Removed duplicate `application_status_submitted_idx` create/drop operations from `2026_04_13_000012_add_application_performance_indexes.php`
+
+### Prevention Checklist
+
+- Before adding a named index in later migrations, verify it is not already created in earlier schema migrations
+- Keep performance migrations additive and non-overlapping

@@ -17,6 +17,7 @@ class TrackApplicationResubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'hp_token' => ['honeypot'],
             'documents' => ['required', 'array', 'min:1'],
             'documents.*' => ['file', 'mimes:jpg,jpeg', 'max:1024'],
         ];

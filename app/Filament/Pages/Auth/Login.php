@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use SensitiveParameter;
@@ -30,7 +31,7 @@ class Login extends BaseLogin
     public function mount(): void
     {
         if (Filament::getCurrentOrDefaultPanel()->getId() !== 'admin') {
-            $this->redirectRoute('login', navigate: true);
+            $this->redirectRoute('login');
 
             return;
         }
@@ -55,7 +56,7 @@ class Login extends BaseLogin
 
     public function getHeading(): string
     {
-        return 'AICS Login';
+        return 'AICS SYSTEM';
     }
 
     public function getSubheading(): ?string
@@ -77,7 +78,7 @@ class Login extends BaseLogin
 
         /** @var SessionGuard $authGuard */
         $authGuard = Filament::auth();
-        $authProvider = $authGuard->getProvider(); /** @phpstan-ignore-line */
+        $authProvider = $authGuard->getProvider();
         $credentials = $this->getCredentialsFromFormData($data);
 
         $user = $authProvider->retrieveByCredentials($credentials);
@@ -109,7 +110,7 @@ class Login extends BaseLogin
 
         session()->put(self::OTP_CHALLENGE_SESSION_KEY, $challengeId);
 
-        $this->redirectRoute('filament.auth.otp', navigate: true);
+        $this->redirectRoute('filament.auth.otp');
 
         Notification::make()
             ->title('Verification started')
@@ -120,10 +121,6 @@ class Login extends BaseLogin
         return null;
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
     protected function getCredentialsFromFormData(array $data): array
     {
         return [
@@ -142,9 +139,13 @@ class Login extends BaseLogin
             ]);
     }
 
-    /**
-     * @return array<Action>
-     */
+    protected function throwFailureValidationException(): never
+    {
+        throw ValidationException::withMessages([
+            'data.email' => 'These credentials do not match an active account.',
+        ]);
+    }
+
     protected function getFormActions(): array
     {
         return [
@@ -163,13 +164,6 @@ class Login extends BaseLogin
             ->submit('authenticate');
     }
 
-    protected function throwFailureValidationException(): never
-    {
-        throw ValidationException::withMessages([
-            'data.email' => 'These credentials do not match an active account.',
-        ]);
-    }
-
     protected function startOtpChallenge(Authenticatable $user, bool $remember, string $targetPanelId): ?string
     {
         $email = (string) ($user->email ?? '');
@@ -180,7 +174,7 @@ class Login extends BaseLogin
 
         $challengeId = bin2hex(random_bytes(16));
 
-        Cache::put(
+        $this->otpStore()->put(
             $this->otpCacheKey($challengeId),
             [
                 'user_id' => $user->getAuthIdentifier(),
@@ -195,6 +189,25 @@ class Login extends BaseLogin
         );
 
         return $challengeId;
+    }
+
+    private function otpStore(): CacheRepository
+    {
+        $defaultStore = (string) config('cache.default', 'database');
+
+        if (app()->environment('testing')) {
+            return Cache::store($defaultStore);
+        }
+
+        if ($defaultStore !== 'array') {
+            return Cache::store($defaultStore);
+        }
+
+        if (is_array(config('cache.stores.file'))) {
+            return Cache::store('file');
+        }
+
+        return Cache::store($defaultStore);
     }
 
     protected function otpCacheKey(string $challengeId): string
@@ -213,9 +226,6 @@ class Login extends BaseLogin
         return null;
     }
 
-    /**
-     * @param  array<string, mixed>  $credentials
-     */
     protected function fireFailedEvent(Guard $guard, ?Authenticatable $user, #[SensitiveParameter] array $credentials): void
     {
         event(app(Failed::class, [

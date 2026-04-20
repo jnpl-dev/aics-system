@@ -1,10 +1,10 @@
 <?php
 
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Auth\OtpChallenge;
 use App\Http\Controllers\ApplicantApplicationController;
 use App\Http\Controllers\ApplicantTrackingController;
 use App\Http\Controllers\AuthIntegrationController;
-use App\Filament\Pages\Auth\Login;
-use App\Filament\Pages\Auth\OtpChallenge;
 use Filament\Http\Middleware\SetUpPanel;
 use Illuminate\Support\Facades\Route;
 
@@ -25,17 +25,15 @@ Route::post('/track/application/resubmit', [ApplicantTrackingController::class, 
 Route::get('/staff-login', fn () => redirect()->to('/login'))->name('staff.login');
 
 Route::middleware('guest')->get('/login', Login::class)
-    ->middleware(SetUpPanel::class . ':admin')
+    ->middleware(SetUpPanel::class.':admin')
     ->name('login');
 
 Route::middleware('guest')->get('/admin/login', fn () => redirect()->route('login'));
 Route::middleware('guest')->get('/aics-staff/login', fn () => redirect()->route('login'));
 
-Route::middleware('guest')->group(function (): void {
-    Route::get('/otp', OtpChallenge::class)
-        ->middleware(SetUpPanel::class . ':admin')
-        ->name('filament.auth.otp');
-});
+Route::get('/otp', OtpChallenge::class)
+    ->middleware(SetUpPanel::class.':admin')
+    ->name('filament.auth.otp');
 
 Route::post('/auth/login-attempt', [AuthIntegrationController::class, 'logLoginAttempt'])->name('auth.login-attempt');
 Route::post('/auth/login-cooldown-check', [AuthIntegrationController::class, 'checkLoginCooldown'])->name('auth.login-cooldown-check');
