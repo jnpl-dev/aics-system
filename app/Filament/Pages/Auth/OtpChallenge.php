@@ -573,7 +573,7 @@ class OtpChallenge extends SimplePage
                 'action' => 'configure',
                 'description' => implode('; ', $parts),
                 'ip_address' => request()->ip(),
-                'timestamp' => now(),
+                'timestamp' => now('Asia/Manila'),
             ]);
         } catch (\Throwable) {
             // Non-fatal: OTP flow should continue even if audit logging fails.

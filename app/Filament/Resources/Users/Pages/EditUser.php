@@ -82,7 +82,7 @@ class EditUser extends EditRecord
                     'target_user_email' => $record->email,
                 ], JSON_UNESCAPED_UNICODE),
                 'ip_address' => request()->ip(),
-                'timestamp' => now(),
+                'timestamp' => now('Asia/Manila'),
             ]);
         }
 
@@ -97,7 +97,7 @@ class EditUser extends EditRecord
                     'status' => $updateData['status'],
                 ], JSON_UNESCAPED_UNICODE),
                 'ip_address' => request()->ip(),
-                'timestamp' => now(),
+                'timestamp' => now('Asia/Manila'),
             ]);
         }
 

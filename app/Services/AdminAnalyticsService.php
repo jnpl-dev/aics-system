@@ -345,9 +345,9 @@ class AdminAnalyticsService
     private function toCarbon(mixed $value): Carbon
     {
         if ($value instanceof Carbon) {
-            return $value;
+            return $value->setTimezone('Asia/Manila');
         }
 
-        return Carbon::parse((string) $value);
+        return Carbon::parse((string) $value)->setTimezone('Asia/Manila');
     }
 }

@@ -406,7 +406,7 @@ class AuthIntegrationController extends Controller
             'action' => $action,
             'description' => implode('; ', $descriptionParts),
             'ip_address' => $request->ip(),
-            'timestamp' => now(),
+            'timestamp' => now('Asia/Manila'),
         ]);
     }
 

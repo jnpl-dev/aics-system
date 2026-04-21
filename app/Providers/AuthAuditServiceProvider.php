@@ -50,7 +50,7 @@ class AuthAuditServiceProvider extends ServiceProvider
                 'action' => $action,
                 'description' => $description,
                 'ip_address' => request()->ip(),
-                'timestamp' => now(),
+                'timestamp' => now('Asia/Manila'),
             ]);
         } catch (\Throwable) {
             // Non-fatal: auth logging should never block authentication flow.

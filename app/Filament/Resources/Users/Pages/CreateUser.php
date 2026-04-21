@@ -109,7 +109,7 @@ class CreateUser extends CreateRecord
                 'supabase_user_id' => $supabaseUserId,
             ], JSON_UNESCAPED_UNICODE),
             'ip_address' => request()->ip(),
-            'timestamp' => now(),
+            'timestamp' => now('Asia/Manila'),
         ]);
 
         return $user;

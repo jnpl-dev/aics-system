@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AuditLogs\Tables;
 
 use Filament\Tables\Columns\TextColumn;
+use Carbon\Carbon;
 use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -19,7 +20,21 @@ class AuditLogsTable
 
                 TextColumn::make('timestamp')
                     ->label('Timestamp')
-                    ->dateTime('M d, Y h:i A')
+                    ->formatStateUsing(static function ($state): ?string {
+                        if ($state === null) {
+                            return null;
+                        }
+
+                        if ($state instanceof \Carbon\CarbonInterface) {
+                            return $state->setTimezone('Asia/Manila')->format('M d, Y h:i A');
+                        }
+
+                        try {
+                            return Carbon::parse($state)->setTimezone('Asia/Manila')->format('M d, Y h:i A');
+                        } catch (\Throwable) {
+                            return (string) $state;
+                        }
+                    })
                     ->sortable(),
 
                 TextColumn::make('module')
@@ -56,7 +71,8 @@ class AuditLogsTable
                     ->label('Description')
                     ->limit(80)
                     ->tooltip(fn (?string $state): ?string => filled($state) ? $state : null)
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('user_id')
                     ->label('User ID')

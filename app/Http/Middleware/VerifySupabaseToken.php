@@ -54,7 +54,7 @@ class VerifySupabaseToken
                         'action' => 'login',
                         'description' => 'event=AUTH_SESSION_EXPIRED; reason=invalid_or_expired_supabase_token',
                         'ip_address' => $request->ip(),
-                        'timestamp' => now(),
+                        'timestamp' => now('Asia/Manila'),
                     ]);
                 } catch (Throwable) {
                     // Non-fatal: some environments enforce FK on audit_log.user_id and reject anonymous user_id=0.

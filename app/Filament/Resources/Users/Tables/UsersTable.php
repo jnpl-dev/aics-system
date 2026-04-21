@@ -104,7 +104,7 @@ class UsersTable
                                         'target_user_email' => $record->email,
                                     ], JSON_UNESCAPED_UNICODE),
                                     'ip_address' => request()->ip(),
-                                    'timestamp' => now(),
+                                    'timestamp' => now('Asia/Manila'),
                                 ]);
 
                                 Notification::make()
@@ -138,7 +138,7 @@ class UsersTable
                                         'status' => $nextStatus,
                                     ], JSON_UNESCAPED_UNICODE),
                                     'ip_address' => request()->ip(),
-                                    'timestamp' => now(),
+                                    'timestamp' => now('Asia/Manila'),
                                 ]);
 
                                 Notification::make()
@@ -195,7 +195,7 @@ class UsersTable
                                     'supabase_delete_code' => (string) ($supabaseDeleteResult['code'] ?? 'unknown'),
                                 ], JSON_UNESCAPED_UNICODE),
                                 'ip_address' => request()->ip(),
-                                'timestamp' => now(),
+                                'timestamp' => now('Asia/Manila'),
                             ]);
 
                             Notification::make()
