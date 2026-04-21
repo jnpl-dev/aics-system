@@ -160,7 +160,52 @@ OTP behavior note:
 - OTP delivery is strict email send flow.
 - No debug OTP value or fallback delivery hint is exposed by API responses.
 
-Audit note for auth tracking:
+## Admin Analytics Features
+
+### Overview
+
+The Admin Panel now includes a dedicated **Analytics** page and dashboard KPI section, mirroring the AICS Staff analytics UI for consistency. These features provide system administrators with real-time insights into user activity, authentication events, and unusual activity patterns.
+
+### Features
+
+- **Dashboard KPI Cards:**
+    - Active Users
+    - Inactive Users
+    - Total Users
+- **Latest Activities Table:**
+    - Shows the most recent admin/audit log events (login, logout, OTP, etc.)
+- **Unusual Activities Table:**
+    - Highlights users with high failed login attempts, color-coded by severity (Warning, High, Critical)
+- **Navigation:**
+    - Analytics page is accessible from the admin sidebar and via `/admin/analytics`.
+    - KPI and activity widgets are visible on the admin dashboard (`/admin`).
+
+### Data Sources
+
+- **User Model:** Used for user status and role breakdowns.
+- **AuditLog Model:** Used for activity and authentication event tracking.
+
+### Severity Logic for Unusual Activities
+
+- 5–7 failed logins: Warning
+- 8–10 failed logins: High
+- 11+ failed logins: Critical
+
+### Implementation
+
+- Backend logic is provided by `App\Services\AdminAnalyticsService`.
+- UI is implemented via Filament page (`App\Filament\Pages\Analytics`) and widgets (`App\Filament\Widgets\AdminKpiSummaryWidget`, `AdminActivitiesOverviewWidget`).
+- Blade views for widgets and analytics page are in `resources/views/filament/admin/`.
+
+### Usage
+
+1. Log in as an admin user.
+2. Access the dashboard to view KPI cards and compact activity tables.
+3. Click "View Full Analytics" to open the Analytics page for detailed tables and filtering.
+
+### Data Contract
+
+- All data is sourced from existing Eloquent models; no new dependencies or external APIs are used.
 
 - Login-related auth attempts (OTP request, OTP verify outcomes, and logout) are persisted to `audit_log`.
 - Admin audit records are reviewed from the Filament **Audit Logs** page at `/admin/audit-logs`.

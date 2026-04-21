@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo($logoPath)
             ->favicon($faviconPath)
             ->darkModeBrandLogo(fn () => $logoPath)
+            ->viteTheme('resources/css/filament/aics-staff/theme.css')
             ->colors([
                 'primary' => Color::hex('#176334'),
                 'success' => Color::hex('#6C9C02'),
@@ -46,12 +47,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
+                \App\Filament\Pages\Analytics::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

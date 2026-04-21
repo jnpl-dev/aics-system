@@ -54,4 +54,4 @@ Auto-SMS log. Every key status change triggers a notification record and SMS sen
 
 ## 14. AuditLog
 
-System-wide activity trail for admin. Covers all modules not just application movement.
+System-wide activity and authentication event trail for admin. Used for analytics KPI, latest activities, and unusual activity detection in the Admin Panel. Includes event codes for login, logout, OTP, and failed login attempts. Severity logic for failed logins is used to highlight unusual activity in analytics tables.
